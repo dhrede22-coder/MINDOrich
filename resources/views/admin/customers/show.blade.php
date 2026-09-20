@@ -8,7 +8,7 @@
 
     {{-- =========================================================
          PAGE HEADER
-         ========================================================= --}}
+    ========================================================== --}}
     <div class="d-flex justify-content-between align-items-center mb-4">
 
         <div>
@@ -34,7 +34,7 @@
 
     {{-- =========================================================
          SUCCESS MESSAGE
-         ========================================================= --}}
+    ========================================================== --}}
     @if(session('success'))
 
         <div class="alert alert-success alert-dismissible fade show">
@@ -56,8 +56,9 @@
 
     {{-- =========================================================
          CUSTOMER INFORMATION
-         ========================================================= --}}
+    ========================================================== --}}
     <div class="row g-4">
+
 
         {{-- =====================================================
              LEFT SIDE - CUSTOMER INFORMATION
@@ -68,6 +69,7 @@
 
                 <div class="card-body p-4">
 
+                    {{-- CUSTOMER HEADER --}}
                     <div class="d-flex align-items-center mb-4">
 
                         <div
@@ -126,15 +128,112 @@
                     </div>
 
 
-                    {{-- ADDRESS --}}
-                    <div class="mb-3">
+                    {{-- =================================================
+                         DELIVERY INFORMATION
+                    ================================================== --}}
+                    <div class="border-top pt-4 mt-4 mb-4">
 
-                        <label class="text-muted small">
-                            Address
-                        </label>
+                        <h6 class="fw-bold mb-3">
+                            <i class="bi bi-geo-alt me-2"></i>
+                            Delivery Information
+                        </h6>
 
-                        <div class="fw-semibold">
-                            {{ $user->address ?? 'Not provided' }}
+
+                        {{-- HOUSE / STREET --}}
+                        <div class="mb-3">
+
+                            <label class="text-muted small">
+                                House / Unit No. & Street
+                            </label>
+
+                            <div class="fw-semibold">
+                                {{ $user->house_street ?? 'Not provided' }}
+                            </div>
+
+                        </div>
+
+
+                        {{-- BARANGAY --}}
+                        <div class="mb-3">
+
+                            <label class="text-muted small">
+                                Barangay
+                            </label>
+
+                            <div class="fw-semibold">
+                                {{ $user->barangay ?? 'Not provided' }}
+                            </div>
+
+                        </div>
+
+
+                        {{-- MUNICIPALITY / CITY --}}
+                        <div class="mb-3">
+
+                            <label class="text-muted small">
+                                Municipality / City
+                            </label>
+
+                            <div class="fw-semibold">
+                                {{ $user->municipality_city ?? 'Not provided' }}
+                            </div>
+
+                        </div>
+
+
+                        {{-- PROVINCE --}}
+                        <div class="mb-3">
+
+                            <label class="text-muted small">
+                                Province
+                            </label>
+
+                            <div class="fw-semibold">
+                                {{ $user->province ?? 'Not provided' }}
+                            </div>
+
+                        </div>
+
+
+                        {{-- POSTAL CODE --}}
+                        <div class="mb-3">
+
+                            <label class="text-muted small">
+                                Postal Code
+                            </label>
+
+                            <div class="fw-semibold">
+                                {{ $user->postal_code ?? 'Not provided' }}
+                            </div>
+
+                        </div>
+
+
+                        {{-- LANDMARK --}}
+                        <div class="mb-3">
+
+                            <label class="text-muted small">
+                                Landmark
+                            </label>
+
+                            <div class="fw-semibold">
+                                {{ $user->landmark ?? 'Not provided' }}
+                            </div>
+
+                        </div>
+
+
+                        {{-- LEGACY / COMPLETE ADDRESS --}}
+                        <div class="mb-0">
+
+                            <label class="text-muted small">
+                                Complete Address
+                            </label>
+
+                            <div class="fw-semibold">
+                                {{ $user->address ?? 'Not provided' }}
+                            </div>
+
                         </div>
 
                     </div>
@@ -230,6 +329,7 @@
 
                 <div class="card-body p-4">
 
+                    {{-- VERIFICATION HEADER --}}
                     <div class="d-flex justify-content-between align-items-center mb-4">
 
                         <div>
@@ -251,7 +351,9 @@
                     </div>
 
 
-                    {{-- ID INFORMATION --}}
+                    {{-- =================================================
+                         ID INFORMATION
+                    ================================================== --}}
                     <div class="row g-3 mb-4">
 
                         <div class="col-md-6">
@@ -265,6 +367,7 @@
                             </div>
 
                         </div>
+
 
                         <div class="col-md-6">
 
@@ -282,24 +385,29 @@
 
 
                     {{-- =================================================
-                         VALID ID IMAGE
-                         ================================================= --}}
+                         VALID ID FRONT
+                    ================================================== --}}
                     <div class="mb-4">
 
                         <label class="text-muted small d-block mb-2">
-                            Submitted Valid ID
+                            Valid ID - Front
                         </label>
 
-                        @if($user->id_image)
+                        @php
+                            $frontIdImage = $user->id_front_image ?: $user->id_image;
+                        @endphp
+
+                        @if($frontIdImage)
 
                             <div class="border rounded p-2 text-center">
 
                                 <img
-                                    src="{{ asset('storage/' . $user->id_image) }}"
-                                    alt="Customer Valid ID"
+                                    src="{{ asset('storage/' . $frontIdImage) }}"
+                                    alt="Customer Valid ID Front"
                                     class="img-fluid rounded"
                                     style="
                                         max-height:420px;
+                                        width:100%;
                                         object-fit:contain;
                                     "
                                 >
@@ -312,7 +420,48 @@
 
                                 <i class="bi bi-image fs-1 d-block mb-2"></i>
 
-                                No valid ID has been uploaded.
+                                No valid ID front image has been uploaded.
+
+                            </div>
+
+                        @endif
+
+                    </div>
+
+
+                    {{-- =================================================
+                         VALID ID BACK
+                    ================================================== --}}
+                    <div class="mb-4">
+
+                        <label class="text-muted small d-block mb-2">
+                            Valid ID - Back
+                        </label>
+
+                        @if($user->id_back_image)
+
+                            <div class="border rounded p-2 text-center">
+
+                                <img
+                                    src="{{ asset('storage/' . $user->id_back_image) }}"
+                                    alt="Customer Valid ID Back"
+                                    class="img-fluid rounded"
+                                    style="
+                                        max-height:420px;
+                                        width:100%;
+                                        object-fit:contain;
+                                    "
+                                >
+
+                            </div>
+
+                        @else
+
+                            <div class="border rounded p-4 text-center text-muted">
+
+                                <i class="bi bi-image fs-1 d-block mb-2"></i>
+
+                                No valid ID back image has been uploaded.
 
                             </div>
 
@@ -323,7 +472,7 @@
 
                     {{-- =================================================
                          APPROVE / REJECT
-                         ================================================= --}}
+                    ================================================== --}}
                     @if($user->verification_status !== 'Approved')
 
                         <div class="border-top pt-4">
@@ -427,8 +576,11 @@
                                     <tr>
 
                                         <th>Order</th>
+
                                         <th>Date</th>
+
                                         <th>Status</th>
+
                                         <th class="text-end">
                                             Total
                                         </th>
@@ -558,8 +710,7 @@
                 <div class="modal-body">
 
                     <p class="text-muted">
-                        Please provide a reason for rejecting this
-                        customer's verification.
+                        Please provide a reason for rejecting this customer's verification.
                     </p>
 
                     <label class="form-label fw-semibold">

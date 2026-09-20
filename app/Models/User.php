@@ -8,6 +8,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use App\Models\Role;
 use App\Models\Sale;
 
@@ -27,6 +28,7 @@ class User extends Authenticatable
         'role_id',
         'name',
         'email',
+        'profile_image',
         'password',
 
         // Customer Information
@@ -40,6 +42,22 @@ class User extends Authenticatable
         'verification_status',
         'verified_at',
         'verification_notes',
+
+        // Delivery Information
+'house_street',
+'barangay',
+'municipality_city',
+'province',
+'postal_code',
+'landmark',
+
+// Valid ID Images
+'id_front_image',
+'id_back_image',
+
+        // Customer Notification Preferences
+        'order_notifications',
+        'product_notifications',
     ];
 
     /**
@@ -69,6 +87,10 @@ class User extends Authenticatable
 
             // Customer verification date
             'verified_at' => 'datetime',
+
+            // Customer notification preferences
+            'order_notifications' => 'boolean',
+            'product_notifications' => 'boolean',
         ];
     }
 
@@ -96,8 +118,19 @@ class User extends Authenticatable
         return $this->hasMany(Sale::class);
     }
 
-    public function cartItems(): HasMany
+    public function reviews(): HasMany
 {
-    return $this->hasMany(CartItem::class);
+    return $this->hasMany(ProductReview::class);
 }
+
+public function favorites(): BelongsToMany
+{
+    return $this->belongsToMany(Product::class, 'favorites')
+        ->withTimestamps();
+}
+
+    public function cartItems(): HasMany
+    {
+        return $this->hasMany(CartItem::class);
+    }
 }

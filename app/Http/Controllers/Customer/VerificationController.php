@@ -34,7 +34,7 @@ class VerificationController extends Controller
      * ============================================================
      *
      * This method receives the customer's verification
-     * information and valid ID.
+     * information, delivery information, and valid ID images.
      */
     public function store(Request $request)
     {
@@ -51,11 +51,41 @@ class VerificationController extends Controller
                 'max:30',
             ],
 
-            // Customer address
-            'address' => [
+            // Delivery information
+            'house_street' => [
                 'required',
                 'string',
-                'max:1000',
+                'max:255',
+            ],
+
+            'barangay' => [
+                'required',
+                'string',
+                'max:255',
+            ],
+
+            'municipality_city' => [
+                'required',
+                'string',
+                'max:255',
+            ],
+
+            'province' => [
+                'required',
+                'string',
+                'max:255',
+            ],
+
+            'postal_code' => [
+                'required',
+                'string',
+                'max:20',
+            ],
+
+            'landmark' => [
+                'nullable',
+                'string',
+                'max:255',
             ],
 
             // Type of valid ID
@@ -72,8 +102,16 @@ class VerificationController extends Controller
                 'max:100',
             ],
 
-            // Valid ID image
-            'id_image' => [
+            // Front of valid ID
+            'id_front_image' => [
+                'required',
+                'image',
+                'mimes:jpg,jpeg,png,webp',
+                'max:5120',
+            ],
+
+            // Back of valid ID
+            'id_back_image' => [
                 'required',
                 'image',
                 'mimes:jpg,jpeg,png,webp',
@@ -90,20 +128,50 @@ class VerificationController extends Controller
 
 
         // =========================================================
-        // UPLOAD VALID ID
+        // BUILD LEGACY ADDRESS FIELD
+        // =========================================================
+        //
+        // Keep the existing "address" field for compatibility
+        // with existing customer/admin pages and old records.
+        //
+
+        $addressParts = [
+            $validated['house_street'],
+            $validated['barangay'],
+            $validated['municipality_city'],
+            $validated['province'],
+            $validated['postal_code'],
+        ];
+
+        if (!empty($validated['landmark'])) {
+            $addressParts[] = 'Landmark: ' . $validated['landmark'];
+        }
+
+        $completeAddress = implode(', ', $addressParts);
+
+
+        // =========================================================
+        // UPLOAD FRONT ID
         // =========================================================
 
-        $idImagePath = null;
+        $idFrontImagePath = $request
+            ->file('id_front_image')
+            ->store(
+                'customer-verifications',
+                'public'
+            );
 
-        if ($request->hasFile('id_image')) {
 
-            $idImagePath = $request
-                ->file('id_image')
-                ->store(
-                    'customer-verifications',
-                    'public'
-                );
-        }
+        // =========================================================
+        // UPLOAD BACK ID
+        // =========================================================
+
+        $idBackImagePath = $request
+            ->file('id_back_image')
+            ->store(
+                'customer-verifications',
+                'public'
+            );
 
 
         // =========================================================
@@ -112,15 +180,30 @@ class VerificationController extends Controller
 
         $user->update([
 
+            // Contact
             'contact_number' => $validated['contact_number'],
 
-            'address' => $validated['address'],
+            // Keep old address field populated for compatibility
+            'address' => $completeAddress,
 
+            // Structured delivery information
+            'house_street' => $validated['house_street'],
+            'barangay' => $validated['barangay'],
+            'municipality_city' => $validated['municipality_city'],
+            'province' => $validated['province'],
+            'postal_code' => $validated['postal_code'],
+            'landmark' => $validated['landmark'] ?? null,
+
+            // ID information
             'id_type' => $validated['id_type'],
-
             'id_number' => $validated['id_number'],
 
-            'id_image' => $idImagePath,
+            // New front/back ID images
+            'id_front_image' => $idFrontImagePath,
+            'id_back_image' => $idBackImagePath,
+
+            // Keep old ID field populated for compatibility
+            'id_image' => $idFrontImagePath,
 
             // IMPORTANT:
             // Customer is NOT approved yet.

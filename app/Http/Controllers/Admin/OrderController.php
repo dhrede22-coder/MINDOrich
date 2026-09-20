@@ -311,12 +311,110 @@ public function receipt(Sale $sale)
 public function updateStatus(Request $request, Sale $sale)
 {
     $validated = $request->validate([
-        'status' => 'required|in:Pending,Processing,Completed,Cancelled',
+        'status' => 'required|in:Pending,Processing,To Deliver,Delivered,Cancelled',
     ]);
 
-    $sale->update([
-        'status' => $validated['status'],
-    ]);
+    $newStatus = $validated['status'];
+    $currentStatus = $sale->status;
+
+    /*
+    |--------------------------------------------------------------------------
+    | WALK-IN ORDERS
+    |--------------------------------------------------------------------------
+    |
+    | Walk-in sales are already completed and should not use the
+    | online delivery status flow.
+    |
+    */
+    if ($sale->sale_type === 'Walk-in') {
+        return redirect()
+            ->route('orders.show', $sale)
+            ->with('error', 'Walk-in orders are already completed and do not use the online order status flow.');
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | VALID STATUS TRANSITIONS
+    |--------------------------------------------------------------------------
+    */
+    $allowedTransitions = [
+        'Pending' => [
+            'Processing',
+            'Cancelled',
+        ],
+
+        'Processing' => [
+            'To Deliver',
+            'Cancelled',
+        ],
+
+        'To Deliver' => [
+            'Delivered',
+            'Cancelled',
+        ],
+
+        'Delivered' => [],
+
+        'Cancelled' => [],
+    ];
+
+    if (!in_array($newStatus, $allowedTransitions[$currentStatus] ?? [], true)) {
+        return redirect()
+            ->route('orders.show', $sale)
+            ->with(
+                'error',
+                "The order cannot be changed from {$currentStatus} to {$newStatus}."
+            );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | CANCEL ORDER
+    |--------------------------------------------------------------------------
+    |
+    | Restore the deducted stock when Admin cancels an online order.
+    |
+    */
+    if ($newStatus === 'Cancelled') {
+        DB::transaction(function () use ($sale) {
+            $sale->load('saleItems');
+
+            foreach ($sale->saleItems as $saleItem) {
+                $product = Product::where('id', $saleItem->product_id)
+                    ->lockForUpdate()
+                    ->first();
+
+                if (!$product) {
+                    continue;
+                }
+
+                $newStock = $product->stock + $saleItem->quantity;
+
+                $product->update([
+                    'stock' => $newStock,
+                    'status' => $newStock > 0
+                        ? 'Available'
+                        : 'Out of Stock',
+                ]);
+
+                InventoryMovement::create([
+                    'product_id' => $product->id,
+                    'sale_id' => $sale->id,
+                    'movement_type' => 'Returned',
+                    'quantity' => $saleItem->quantity,
+                    'remarks' => "Order {$sale->sale_number} cancelled by admin",
+                ]);
+            }
+
+            $sale->update([
+                'status' => 'Cancelled',
+            ]);
+        });
+    } else {
+        $sale->update([
+            'status' => $newStatus,
+        ]);
+    }
 
     return redirect()
         ->route('orders.show', $sale)

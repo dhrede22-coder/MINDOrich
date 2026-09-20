@@ -8,7 +8,7 @@
 
     {{-- =========================================================
          PAGE HEADER
-         ========================================================= --}}
+    ========================================================== --}}
     <div class="mb-4">
 
         <h2 class="fw-bold mb-1">
@@ -24,7 +24,7 @@
 
     {{-- =========================================================
          SUCCESS MESSAGE
-         ========================================================= --}}
+    ========================================================== --}}
     @if(session('success'))
 
         <div class="alert alert-success alert-dismissible fade show rounded-3"
@@ -47,7 +47,7 @@
 
     {{-- =========================================================
          ERROR MESSAGE
-         ========================================================= --}}
+    ========================================================== --}}
     @if(session('error'))
 
         <div class="alert alert-danger alert-dismissible fade show rounded-3"
@@ -70,7 +70,7 @@
 
     {{-- =========================================================
          VALIDATION ERRORS
-         ========================================================= --}}
+    ========================================================== --}}
     @if($errors->any())
 
         <div class="alert alert-danger rounded-3">
@@ -98,7 +98,7 @@
 
     {{-- =========================================================
          CURRENT VERIFICATION STATUS
-         ========================================================= --}}
+    ========================================================== --}}
 
     @if($user->verification_status === 'Approved')
 
@@ -115,9 +115,7 @@
                             class="rounded-circle bg-success-subtle d-flex align-items-center justify-content-center"
                             style="width:55px;height:55px;"
                         >
-
                             <i class="bi bi-shield-check text-success fs-4"></i>
-
                         </div>
 
                     </div>
@@ -156,9 +154,7 @@
                             class="rounded-circle bg-warning-subtle d-flex align-items-center justify-content-center"
                             style="width:55px;height:55px;"
                         >
-
                             <i class="bi bi-hourglass-split text-warning fs-4"></i>
-
                         </div>
 
                     </div>
@@ -198,9 +194,7 @@
                             class="rounded-circle bg-danger-subtle d-flex align-items-center justify-content-center"
                             style="width:55px;height:55px;"
                         >
-
                             <i class="bi bi-shield-x text-danger fs-4"></i>
-
                         </div>
 
                     </div>
@@ -246,7 +240,7 @@
 
     {{-- =========================================================
          VERIFICATION FORM
-         ========================================================= --}}
+    ========================================================== --}}
     @if(
         $user->verification_status !== 'Approved' &&
         $user->verification_status !== 'Under Review'
@@ -256,7 +250,7 @@
 
             <div class="card-body p-4 p-md-5">
 
-                {{-- Form Header --}}
+                {{-- FORM HEADER --}}
                 <div class="mb-4">
 
                     <h5 class="fw-bold mb-1">
@@ -264,7 +258,7 @@
                     </h5>
 
                     <p class="text-muted mb-0">
-                        Please provide accurate information and a valid government-issued ID.
+                        Please provide complete and accurate information for account verification and delivery.
                     </p>
 
                 </div>
@@ -272,7 +266,7 @@
 
                 {{-- =================================================
                      VERIFICATION FORM
-                     ================================================= --}}
+                ================================================== --}}
                 <form
                     action="{{ route('customer.verification.store') }}"
                     method="POST"
@@ -284,7 +278,7 @@
 
                     {{-- =================================================
                          CUSTOMER INFORMATION
-                         ================================================= --}}
+                    ================================================= --}}
                     <div class="mb-4">
 
                         <h6 class="fw-bold mb-3">
@@ -295,7 +289,7 @@
 
                         <div class="row g-3">
 
-                            {{-- Name --}}
+                            {{-- NAME --}}
                             <div class="col-md-6">
 
                                 <label class="form-label fw-semibold">
@@ -312,7 +306,7 @@
                             </div>
 
 
-                            {{-- Email --}}
+                            {{-- EMAIL --}}
                             <div class="col-md-6">
 
                                 <label class="form-label fw-semibold">
@@ -329,7 +323,7 @@
                             </div>
 
 
-                            {{-- Contact Number --}}
+                            {{-- CONTACT NUMBER --}}
                             <div class="col-md-6">
 
                                 <label
@@ -360,28 +354,208 @@
 
                             </div>
 
+                        </div>
 
-                            {{-- Address --}}
-                            <div class="col-12">
+                    </div>
+
+
+                    <hr class="my-4">
+
+
+                    {{-- =================================================
+                         DELIVERY INFORMATION
+                    ================================================== --}}
+                    <div class="mb-4">
+
+                        <h6 class="fw-bold mb-3">
+                            <i class="bi bi-geo-alt me-2"></i>
+                            Delivery Information
+                        </h6>
+
+
+                        <div class="row g-3">
+
+                            {{-- HOUSE / STREET --}}
+                            <div class="col-md-6">
 
                                 <label
-                                    for="address"
+                                    for="house_street"
                                     class="form-label fw-semibold"
                                 >
-                                    Complete Address
+                                    House / Unit No. & Street
                                     <span class="text-danger">*</span>
                                 </label>
 
-                                <textarea
-                                    name="address"
-                                    id="address"
-                                    rows="3"
-                                    class="form-control @error('address') is-invalid @enderror"
-                                    placeholder="Enter your complete address"
+                                <input
+                                    type="text"
+                                    name="house_street"
+                                    id="house_street"
+                                    class="form-control @error('house_street') is-invalid @enderror"
+                                    value="{{ old('house_street', $user->house_street) }}"
+                                    placeholder="e.g. Purok 2, Rizal Street"
                                     required
-                                >{{ old('address', $user->address) }}</textarea>
+                                >
 
-                                @error('address')
+                                @error('house_street')
+
+                                    <div class="invalid-feedback">
+                                        {{ $message }}
+                                    </div>
+
+                                @enderror
+
+                            </div>
+
+
+                            {{-- BARANGAY --}}
+                            <div class="col-md-6">
+
+                                <label
+                                    for="barangay"
+                                    class="form-label fw-semibold"
+                                >
+                                    Barangay
+                                    <span class="text-danger">*</span>
+                                </label>
+
+                                <input
+                                    type="text"
+                                    name="barangay"
+                                    id="barangay"
+                                    class="form-control @error('barangay') is-invalid @enderror"
+                                    value="{{ old('barangay', $user->barangay) }}"
+                                    placeholder="Enter your barangay"
+                                    required
+                                >
+
+                                @error('barangay')
+
+                                    <div class="invalid-feedback">
+                                        {{ $message }}
+                                    </div>
+
+                                @enderror
+
+                            </div>
+
+
+                            {{-- MUNICIPALITY / CITY --}}
+                            <div class="col-md-6">
+
+                                <label
+                                    for="municipality_city"
+                                    class="form-label fw-semibold"
+                                >
+                                    Municipality / City
+                                    <span class="text-danger">*</span>
+                                </label>
+
+                                <input
+                                    type="text"
+                                    name="municipality_city"
+                                    id="municipality_city"
+                                    class="form-control @error('municipality_city') is-invalid @enderror"
+                                    value="{{ old('municipality_city', $user->municipality_city) }}"
+                                    placeholder="Enter your municipality or city"
+                                    required
+                                >
+
+                                @error('municipality_city')
+
+                                    <div class="invalid-feedback">
+                                        {{ $message }}
+                                    </div>
+
+                                @enderror
+
+                            </div>
+
+
+                            {{-- PROVINCE --}}
+                            <div class="col-md-6">
+
+                                <label
+                                    for="province"
+                                    class="form-label fw-semibold"
+                                >
+                                    Province
+                                    <span class="text-danger">*</span>
+                                </label>
+
+                                <input
+                                    type="text"
+                                    name="province"
+                                    id="province"
+                                    class="form-control @error('province') is-invalid @enderror"
+                                    value="{{ old('province', $user->province) }}"
+                                    placeholder="Enter your province"
+                                    required
+                                >
+
+                                @error('province')
+
+                                    <div class="invalid-feedback">
+                                        {{ $message }}
+                                    </div>
+
+                                @enderror
+
+                            </div>
+
+
+                            {{-- POSTAL CODE --}}
+                            <div class="col-md-6">
+
+                                <label
+                                    for="postal_code"
+                                    class="form-label fw-semibold"
+                                >
+                                    Postal Code
+                                    <span class="text-danger">*</span>
+                                </label>
+
+                                <input
+                                    type="text"
+                                    name="postal_code"
+                                    id="postal_code"
+                                    class="form-control @error('postal_code') is-invalid @enderror"
+                                    value="{{ old('postal_code', $user->postal_code) }}"
+                                    placeholder="Enter postal code"
+                                    required
+                                >
+
+                                @error('postal_code')
+
+                                    <div class="invalid-feedback">
+                                        {{ $message }}
+                                    </div>
+
+                                @enderror
+
+                            </div>
+
+
+                            {{-- LANDMARK --}}
+                            <div class="col-md-6">
+
+                                <label
+                                    for="landmark"
+                                    class="form-label fw-semibold"
+                                >
+                                    Landmark
+                                    <span class="text-muted fw-normal">(Optional)</span>
+                                </label>
+
+                                <input
+                                    type="text"
+                                    name="landmark"
+                                    id="landmark"
+                                    class="form-control @error('landmark') is-invalid @enderror"
+                                    value="{{ old('landmark', $user->landmark) }}"
+                                    placeholder="e.g. Near barangay hall"
+                                >
+
+                                @error('landmark')
 
                                     <div class="invalid-feedback">
                                         {{ $message }}
@@ -401,7 +575,7 @@
 
                     {{-- =================================================
                          VALID ID INFORMATION
-                         ================================================= --}}
+                    ================================================== --}}
                     <div class="mb-4">
 
                         <h6 class="fw-bold mb-3">
@@ -412,7 +586,7 @@
 
                         <div class="row g-3">
 
-                            {{-- ID Type --}}
+                            {{-- ID TYPE --}}
                             <div class="col-md-6">
 
                                 <label
@@ -489,7 +663,7 @@
                             </div>
 
 
-                            {{-- ID Number --}}
+                            {{-- ID NUMBER --}}
                             <div class="col-md-6">
 
                                 <label
@@ -521,32 +695,66 @@
                             </div>
 
 
-                            {{-- ID Image --}}
-                            <div class="col-12">
+                            {{-- ID FRONT --}}
+                            <div class="col-md-6">
 
                                 <label
-                                    for="id_image"
+                                    for="id_front_image"
                                     class="form-label fw-semibold"
                                 >
-                                    Upload Valid ID
+                                    Valid ID - Front
                                     <span class="text-danger">*</span>
                                 </label>
 
                                 <input
                                     type="file"
-                                    name="id_image"
-                                    id="id_image"
-                                    class="form-control @error('id_image') is-invalid @enderror"
+                                    name="id_front_image"
+                                    id="id_front_image"
+                                    class="form-control @error('id_front_image') is-invalid @enderror"
                                     accept=".jpg,.jpeg,.png,.webp"
                                     required
                                 >
 
                                 <div class="form-text">
-                                    Accepted formats: JPG, JPEG, PNG, WEBP.
-                                    Maximum file size: 5MB.
+                                    Upload the front side of your valid ID. Maximum file size: 5MB.
                                 </div>
 
-                                @error('id_image')
+                                @error('id_front_image')
+
+                                    <div class="invalid-feedback">
+                                        {{ $message }}
+                                    </div>
+
+                                @enderror
+
+                            </div>
+
+
+                            {{-- ID BACK --}}
+                            <div class="col-md-6">
+
+                                <label
+                                    for="id_back_image"
+                                    class="form-label fw-semibold"
+                                >
+                                    Valid ID - Back
+                                    <span class="text-danger">*</span>
+                                </label>
+
+                                <input
+                                    type="file"
+                                    name="id_back_image"
+                                    id="id_back_image"
+                                    class="form-control @error('id_back_image') is-invalid @enderror"
+                                    accept=".jpg,.jpeg,.png,.webp"
+                                    required
+                                >
+
+                                <div class="form-text">
+                                    Upload the back side of your valid ID. Maximum file size: 5MB.
+                                </div>
+
+                                @error('id_back_image')
 
                                     <div class="invalid-feedback">
                                         {{ $message }}
@@ -563,7 +771,7 @@
 
                     {{-- =================================================
                          PRIVACY / VERIFICATION NOTICE
-                         ================================================= --}}
+                    ================================================== --}}
                     <div class="alert alert-light border rounded-3 mb-4">
 
                         <div class="d-flex">
@@ -577,10 +785,10 @@
                                 </strong>
 
                                 <p class="text-muted small mb-0 mt-1">
-                                    Your submitted information will be reviewed
-                                    by the administrator before you can place an
-                                    online order. Please make sure that the
-                                    information and uploaded ID are accurate.
+                                    Your submitted information and valid ID images will be reviewed
+                                    by the administrator before you can place an online order.
+                                    Please make sure that all information and uploaded ID images are
+                                    accurate and clearly visible.
                                 </p>
 
                             </div>
@@ -592,7 +800,7 @@
 
                     {{-- =================================================
                          SUBMIT BUTTON
-                         ================================================= --}}
+                    ================================================== --}}
                     <div class="d-flex justify-content-end gap-2">
 
                         <a
@@ -625,7 +833,7 @@
 
         {{-- =========================================================
              UNDER REVIEW ACTION
-             ========================================================= --}}
+        ========================================================== --}}
         <div class="text-center mt-4">
 
             <a
@@ -642,7 +850,7 @@
 
         {{-- =========================================================
              APPROVED ACTION
-             ========================================================= --}}
+        ========================================================== --}}
         <div class="text-center mt-4">
 
             <a

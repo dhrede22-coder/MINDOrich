@@ -71,14 +71,27 @@
         </div>
         
 
-        <a href="{{ route('products.create') }}"
-           class="btn btn-warning">
+        <div class="d-flex gap-2">
 
-            <i class="bi bi-plus-circle me-2"></i>
+    <a href="{{ route('promotions.index') }}"
+       class="btn btn-warning">
 
-            Add Product
+        <i class="bi bi-megaphone me-2"></i>
 
-        </a>
+        Add Promotion
+
+    </a>
+
+    <a href="{{ route('products.create') }}"
+       class="btn btn-warning">
+
+        <i class="bi bi-plus-circle me-2"></i>
+
+        Add Product
+
+    </a>
+
+</div>
 
     </div>
 

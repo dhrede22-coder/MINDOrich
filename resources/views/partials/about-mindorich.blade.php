@@ -5,25 +5,34 @@
         <div class="row align-items-center g-5">
 
             <!-- LEFT SIDE -->
+            <div class="col-lg-6 text-center">
 
-            <div class="col-lg-6">
+                <div class="d-flex align-items-center justify-content-center py-3 py-lg-0">
 
-                <img
-                    src="{{ asset('image/about/about-mindorich.jpg') }}"
-                    class="img-fluid rounded-4 shadow"
-                    alt="About MINDOrich">
+                    <img
+                        src="{{ asset('image/logo/mindorich-logo.png') }}"
+                        class="img-fluid"
+                        alt="MINDOrich Logo"
+                        style="
+                            max-width:350px;
+                            width:100%;
+                            height:auto;
+                        "
+                    >
+
+                </div>
 
             </div>
 
-            <!-- RIGHT SIDE -->
 
+            <!-- RIGHT SIDE -->
             <div class="col-lg-6">
 
                 <span class="badge bg-warning text-dark px-3 py-2 mb-3">
                     ABOUT MINDOrich
                 </span>
 
-                <h2 class="fw-bold mb-4">
+                <h2 class="fw-bold mb-4 public-about-title">
 
                     A Digital Platform Connecting
                     <span class="text-warning">
@@ -61,11 +70,13 @@
 
                 </p>
 
-                <div class="row mt-4">
+
+                <!-- Statistics -->
+                <div class="row g-3 mt-4">
 
                     <div class="col-6">
 
-                        <h3 class="fw-bold text-warning">
+                        <h3 class="fw-bold text-warning mb-1">
                             8
                         </h3>
 
@@ -77,7 +88,7 @@
 
                     <div class="col-6">
 
-                        <h3 class="fw-bold text-warning">
+                        <h3 class="fw-bold text-warning mb-1">
                             100%
                         </h3>
 
@@ -89,11 +100,12 @@
 
                 </div>
 
-                <a href="/about"
-                   class="btn btn-warning mt-4 px-4">
 
+                <a
+                    href="/about"
+                    class="btn btn-warning mt-4 px-4"
+                >
                     Learn More
-
                 </a>
 
             </div>
@@ -103,3 +115,34 @@
     </div>
 
 </section>
+
+
+<style>
+    .public-about-title {
+        line-height: 1.2;
+    }
+
+    @media (max-width: 991.98px) {
+        .public-about-title {
+            font-size: 2rem;
+        }
+    }
+
+    @media (max-width: 575.98px) {
+        .public-about-title {
+            font-size: 1.75rem;
+        }
+
+        .public-about-title span {
+            display: inline;
+        }
+
+        .public-about-logo {
+            max-width: 280px;
+        }
+
+        .public-about-stats small {
+            font-size: 0.8rem;
+        }
+    }
+</style>

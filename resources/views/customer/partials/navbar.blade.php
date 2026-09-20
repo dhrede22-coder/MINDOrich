@@ -1,4 +1,4 @@
-<nav class="top-navbar">
+<nav class="top-navbar sticky-top">
 
     {{-- LOGO --}}
     <div>
@@ -171,14 +171,14 @@
                 <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-4">
 
                     <li>
-                        <a class="dropdown-item" href="#">
+                        <a class="dropdown-item" href="{{ route('profile.edit') }}">
                             <i class="bi bi-person me-2"></i>
                             My Profile
                         </a>
                     </li>
 
                     <li>
-                        <a class="dropdown-item" href="#">
+                        <a class="dropdown-item" href="{{ route('customer.settings') }}">
                             <i class="bi bi-gear me-2"></i>
                             Settings
                         </a>

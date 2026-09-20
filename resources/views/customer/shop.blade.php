@@ -225,25 +225,37 @@
 
         <div class="products-header">
 
-            <div>
+    <div>
 
-                <span class="products-count">
-                    {{ $products->total() }} PRODUCTS
-                </span>
+        <span class="products-count">
+            {{ $products->total() }} PRODUCTS
+        </span>
 
-                <h2>
-                    Our Products
-                </h2>
+        <h2>
+            Our Products
+        </h2>
 
-            </div>
+    </div>
 
-            <div class="product-result-count">
-                Showing
-                {{ $products->firstItem() ?? 0 }}–{{ $products->lastItem() ?? 0 }}
-                of {{ $products->total() }}
-            </div>
+    <div class="d-flex align-items-center gap-3">
 
+        <a
+            href="{{ route('customer.favorites') }}"
+            class="btn btn-outline-warning"
+        >
+            <i class="bi bi-heart me-1"></i>
+            My Favorites
+        </a>
+
+        <div class="product-result-count">
+            Showing
+            {{ $products->firstItem() ?? 0 }}–{{ $products->lastItem() ?? 0 }}
+            of {{ $products->total() }}
         </div>
+
+    </div>
+
+</div>
 
 
         {{-- =========================
@@ -295,15 +307,29 @@
 
                         @endif
 
+{{-- Wishlist --}}
+@php
+    $isFavorite = auth()->user()
+        ->favorites
+        ->contains($product->id);
+@endphp
 
-                        {{-- Wishlist --}}
-                        <button
-                            type="button"
-                            class="wishlist-btn"
-                            title="Add to wishlist"
-                        >
-                            <i class="bi bi-heart"></i>
-                        </button>
+<form
+    action="{{ route('customer.favorites.toggle', $product) }}"
+    method="POST"
+    class="wishlist-form"
+>
+    @csrf
+
+    <button
+        type="submit"
+        class="wishlist-btn"
+        title="{{ $isFavorite ? 'Remove from favorites' : 'Add to favorites' }}"
+        aria-label="{{ $isFavorite ? 'Remove from favorites' : 'Add to favorites' }}"
+    >
+        <i class="bi {{ $isFavorite ? 'bi-heart-fill' : 'bi-heart' }}"></i>
+    </button>
+</form>
 
                     </div>
 
@@ -333,11 +359,41 @@
 
 
                         {{-- Price --}}
-                        <div class="product-price">
+@php
+    $pricing = $product->pricing();
+@endphp
 
-                            ₱{{ number_format($product->price, 2) }}
+<div class="product-price">
 
-                        </div>
+    @if($pricing['promotion'])
+
+        <div class="mb-1">
+            <span
+                class="badge bg-danger"
+                style="font-size:11px;"
+            >
+                🔥 HOT DEAL
+            </span>
+        </div>
+
+        <span
+            class="text-muted text-decoration-line-through me-2"
+            style="font-size:14px;"
+        >
+            ₱{{ number_format($pricing['original_price'], 2) }}
+        </span>
+
+        <strong>
+            ₱{{ number_format($pricing['effective_price'], 2) }}
+        </strong>
+
+    @else
+
+        ₱{{ number_format($pricing['original_price'], 2) }}
+
+    @endif
+
+</div>
 
 
                         {{-- Actions --}}
@@ -432,7 +488,7 @@
 
             <div class="shop-pagination">
 
-                {{ $products->links() }}
+                {{ $products->links('pagination::bootstrap-5') }}
 
             </div>
 

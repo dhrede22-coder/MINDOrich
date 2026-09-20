@@ -55,6 +55,17 @@
     </a>
 </li>
 
+<li>
+    <a href="{{ route('categories.index') }}"
+       class="{{ request()->routeIs('categories.*') ? 'active' : '' }}">
+
+        <i class="bi bi-tags"></i>
+
+        Categories
+
+    </a>
+</li>
+
         <li>
 
             <a href="{{ route('orders.index') }}"
@@ -82,7 +93,7 @@
 
             <a href="{{ route('admin.reports.index') }}"
    class="{{ request()->routeIs('admin.reports.*') ? 'active' : '' }}">
-    <i class="bi bi-bar-chart-line"></i>
+    <i class="bi bi-file-earmark-bar-graph"></i>
     <span>Reports</span>
 </a>
 
@@ -92,7 +103,7 @@
 
             <a href="{{ route('admin.analytics.index') }}"
    class="{{ request()->routeIs('admin.analytics.*') ? 'active' : '' }}">
-    <i class="bi bi-bar-chart-line"></i>
+    <i class="bi bi-graph-up-arrow"></i>
     <span>Analytics</span>
 </a>
 

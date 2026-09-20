@@ -21,152 +21,96 @@
 
         </div>
 
-        <div class="row g-5">
 
-            <!-- Contact Information -->
+        <!-- Contact Information -->
+        <div class="row justify-content-center">
 
-            <div class="col-lg-5">
-
-                <div class="card border-0 shadow-sm rounded-4 h-100">
-
-                    <div class="card-body p-4">
-
-                        <h4 class="fw-bold mb-4">
-                            Contact Information
-                        </h4>
-
-                        <div class="mb-4">
-
-                            <h6 class="fw-bold text-warning">
-                                📍 Address
-                            </h6>
-
-                            <p class="text-secondary mb-0">
-                                Pampamayanang Mangyan Ugnayan Inc.<br>
-                                Victoria, Oriental Mindoro, Philippines
-                            </p>
-
-                        </div>
-
-                        <div class="mb-4">
-
-                            <h6 class="fw-bold text-warning">
-                                📞 Phone
-                            </h6>
-
-                            <p class="text-secondary mb-0">
-                                +63 XXX XXX XXXX
-                            </p>
-
-                        </div>
-
-                        <div class="mb-4">
-
-                            <h6 class="fw-bold text-warning">
-                                ✉️ Email
-                            </h6>
-
-                            <p class="text-secondary mb-0">
-                                info@mindorich.com
-                            </p>
-
-                        </div>
-
-                        <div>
-
-                            <h6 class="fw-bold text-warning">
-                                🌐 Facebook
-                            </h6>
-
-                            <p class="text-secondary mb-0">
-                                Pampamayanang Mangyan Ugnayan Inc.
-                            </p>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-            <!-- Contact Form -->
-
-            <div class="col-lg-7">
+            <div class="col-12 col-lg-9">
 
                 <div class="card border-0 shadow-sm rounded-4">
 
-                    <div class="card-body p-4">
+                    <div class="card-body p-4 p-md-5">
 
-                        <h4 class="fw-bold mb-4">
-                            Send Us a Message
+                        <h4 class="fw-bold text-center mb-5">
+                            Contact Information
                         </h4>
 
-                        <form>
 
-                            <div class="row">
+                        <div class="row g-4">
 
-                                <div class="col-md-6 mb-3">
+                            <!-- Address -->
+                            <div class="col-12 col-md-6">
 
-                                    <label class="form-label">
-                                        Full Name
-                                    </label>
+                                <div class="h-100">
 
-                                    <input
-                                        type="text"
-                                        class="form-control"
-                                        placeholder="Enter your name">
+                                    <h6 class="fw-bold text-warning">
+                                        📍 Address
+                                    </h6>
 
-                                </div>
-
-                                <div class="col-md-6 mb-3">
-
-                                    <label class="form-label">
-                                        Email
-                                    </label>
-
-                                    <input
-                                        type="email"
-                                        class="form-control"
-                                        placeholder="Enter your email">
+                                    <p class="text-secondary mb-0">
+                                        Pampamayanang Mangyan Ugnayan Inc.<br>
+                                        Victoria, Oriental Mindoro, Philippines
+                                    </p>
 
                                 </div>
 
                             </div>
 
-                            <div class="mb-3">
 
-                                <label class="form-label">
-                                    Subject
-                                </label>
+                            <!-- Phone -->
+                            <div class="col-12 col-md-6">
 
-                                <input
-                                    type="text"
-                                    class="form-control"
-                                    placeholder="Subject">
+                                <div class="h-100">
 
-                            </div>
+                                    <h6 class="fw-bold text-warning">
+                                        📞 Phone
+                                    </h6>
 
-                            <div class="mb-4">
+                                    <p class="text-secondary mb-0">
+                                        +63 XXX XXX XXXX
+                                    </p>
 
-                                <label class="form-label">
-                                    Message
-                                </label>
-
-                                <textarea
-                                    rows="5"
-                                    class="form-control"
-                                    placeholder="Write your message"></textarea>
+                                </div>
 
                             </div>
 
-                            <button class="btn btn-warning px-5">
 
-                                Send Message
+                            <!-- Email -->
+                            <div class="col-12 col-md-6">
 
-                            </button>
+                                <div class="h-100">
 
-                        </form>
+                                    <h6 class="fw-bold text-warning">
+                                        ✉️ Email
+                                    </h6>
+
+                                    <p class="text-secondary mb-0">
+                                        info@mindorich.com
+                                    </p>
+
+                                </div>
+
+                            </div>
+
+
+                            <!-- Facebook -->
+                            <div class="col-12 col-md-6">
+
+                                <div class="h-100">
+
+                                    <h6 class="fw-bold text-warning">
+                                        🌐 Facebook
+                                    </h6>
+
+                                    <p class="text-secondary mb-0">
+                                        Pampamayanang Mangyan Ugnayan Inc.
+                                    </p>
+
+                                </div>
+
+                            </div>
+
+                        </div>
 
                     </div>
 

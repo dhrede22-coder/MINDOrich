@@ -89,7 +89,7 @@ if ($user->verification_status !== 'Approved') {
                         $item->product_id => [
                             'id' => $item->product->id,
                             'name' => $item->product->product_name,
-                            'price' => $item->product->price,
+                            'price' => $item->product->pricing()['effective_price'],
                             'image' => $item->product->featured_image,
                             'quantity' => $item->quantity,
                         ],
@@ -287,7 +287,7 @@ if ($user->verification_status !== 'Approved') {
             $product->id => [
                 'id' => $product->id,
                 'name' => $product->product_name,
-                'price' => (float) $product->price,
+                'price' => $product->pricing()['effective_price'],
                 'image' => $product->featured_image,
                 'quantity' => $quantity,
             ],
@@ -468,7 +468,7 @@ if ($request->hasFile('gcash_proof')) {
                     |--------------------------------------------------------------------------
                     */
 
-                    $price = (float) $product->price;
+                    $price = $product->pricing()['effective_price'];
 
                     $subtotal = round(
                         $price * $quantity,
@@ -605,13 +605,15 @@ if ($request->hasFile('gcash_proof')) {
 
                 return $sale;
             });
-            auth()->user()->notify(
-    new \App\Notifications\OrderNotification(
-        $sale,
-        'Order Placed',
-        "Your order {$sale->sale_number} has been placed successfully."
-    )
-);
+            if ($user->order_notifications) {
+    $user->notify(
+        new \App\Notifications\OrderNotification(
+            $sale,
+            'Order Placed',
+            "Your order {$sale->sale_number} has been placed successfully."
+        )
+    );
+}
 
 
             /*

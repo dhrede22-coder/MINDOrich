@@ -31,4 +31,9 @@ class Sale extends Model
     {
         return $this->hasMany(SaleItem::class);
     }
+
+    public function reviews(): HasMany
+{
+    return $this->hasMany(ProductReview::class);
+}
 }

@@ -16,6 +16,13 @@ use App\Http\Controllers\Customer\OrderController as CustomerOrderController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Customer\NotificationController;
+use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Customer\SettingsController;
+use App\Http\Controllers\Customer\ReviewController;
+use App\Http\Controllers\Customer\FavoriteController;
+use App\Http\Controllers\Admin\PromotionController;
+use App\Http\Controllers\Public\HomeController;
+use App\Models\Tribe;
 
 // ================================================================
 // CUSTOMER VERIFICATION CONTROLLER
@@ -35,16 +42,18 @@ use App\Http\Controllers\Admin\ProfileController as AdminProfileController;
 |--------------------------------------------------------------------------
 */
 
-Route::get('/', function () {
-    return view('public.home');
-});
+Route::get('/', [HomeController::class, 'index']);
 
 Route::get('/about', function () {
     return view('public.about');
 })->name('public.about');
 
 Route::get('/tribes', function () {
-    return view('public.tribes');
+    $tribes = Tribe::where('status', 'Active')
+        ->orderBy('tribe_name')
+        ->get();
+
+    return view('public.tribes', compact('tribes'));
 })->name('public.tribes');
 
 Route::get('/marketplace', function () {
@@ -116,6 +125,16 @@ Route::middleware(['auth', 'admin'])->group(function () {
         ProductController::class
     );
 
+    Route::resource(
+        'admin/categories',
+        CategoryController::class
+    )->except(['show']);
+
+    Route::resource(
+        'admin/promotions',
+        PromotionController::class
+    );
+
 
     // ============================================================
     // INVENTORY
@@ -169,99 +188,104 @@ Route::middleware(['auth', 'admin'])->group(function () {
     )->name('orders.show');
 
     // Print receipt
-Route::get(
-    '/admin/orders/{sale}/receipt',
-    [OrderController::class, 'receipt']
-)->name('orders.receipt');
+    Route::get(
+        '/admin/orders/{sale}/receipt',
+        [OrderController::class, 'receipt']
+    )->name('orders.receipt');
 
     // Update order status
     Route::patch(
         '/admin/orders/{sale}/status',
         [OrderController::class, 'updateStatus']
     )->name('orders.status.update');
+
     Route::patch(
-    '/admin/orders/{sale}/gcash/verify',
-    [OrderController::class, 'verifyGcash']
-)->name('orders.gcash.verify');
+        '/admin/orders/{sale}/gcash/verify',
+        [OrderController::class, 'verifyGcash']
+    )->name('orders.gcash.verify');
 
-Route::patch(
-    '/admin/orders/{sale}/gcash/reject',
-    [OrderController::class, 'rejectGcash']
-)->name('orders.gcash.reject');
+    Route::patch(
+        '/admin/orders/{sale}/gcash/reject',
+        [OrderController::class, 'rejectGcash']
+    )->name('orders.gcash.reject');
 
-   // ============================================================
-// ADMIN CUSTOMER MANAGEMENT
-// ============================================================
+    // ============================================================
+    // ADMIN CUSTOMER MANAGEMENT
+    // ============================================================
 
-// Customer list
-Route::get(
-    '/admin/customers',
-    [CustomerController::class, 'index']
-)->name('admin.customers.index');
+    // Customer list
+    Route::get(
+        '/admin/customers',
+        [CustomerController::class, 'index']
+    )->name('admin.customers.index');
 
-// View online customer
-Route::get(
-    '/admin/customers/{user}',
-    [CustomerController::class, 'show']
-)->name('admin.customers.show');
+    // View online customer
+    Route::get(
+        '/admin/customers/{user}',
+        [CustomerController::class, 'show']
+    )->name('admin.customers.show');
 
-// Approve customer verification
-Route::patch(
-    '/admin/customers/{user}/approve',
-    [CustomerController::class, 'approve']
-)->name('admin.customers.approve');
+    // Approve customer verification
+    Route::patch(
+        '/admin/customers/{user}/approve',
+        [CustomerController::class, 'approve']
+    )->name('admin.customers.approve');
 
-// Reject customer verification
-Route::patch(
-    '/admin/customers/{user}/reject',
-    [CustomerController::class, 'reject']
-)->name('admin.customers.reject');
+    // Reject customer verification
+    Route::patch(
+        '/admin/customers/{user}/reject',
+        [CustomerController::class, 'reject']
+    )->name('admin.customers.reject');
 
-//reports
-Route::get(
-    '/admin/reports',
-    [ReportController::class, 'index']
-)->name('admin.reports.index');
+    //reports
+    Route::get(
+        '/admin/reports',
+        [ReportController::class, 'index']
+    )->name('admin.reports.index');
 
-Route::get(
-    '/admin/reports/export/pdf',
-    [ReportController::class, 'exportPdf']
-)->name('admin.reports.export.pdf');
+    Route::get(
+        '/admin/reports/export/pdf',
+        [ReportController::class, 'exportPdf']
+    )->name('admin.reports.export.pdf');
 
-Route::get(
-    '/admin/reports/export/excel',
-    [ReportController::class, 'exportExcel']
-)->name('admin.reports.export.excel');
+    Route::get(
+        '/admin/reports/export/excel',
+        [ReportController::class, 'exportExcel']
+    )->name('admin.reports.export.excel');
 
-// ============================================================
-// ADMIN ANALYTICS
-// ============================================================
+    // ============================================================
+    // ADMIN ANALYTICS
+    // ============================================================
 
-Route::get(
-    '/admin/analytics',
-    [AnalyticsController::class, 'index']
-)->name('admin.analytics.index');
+    Route::get(
+        '/admin/analytics',
+        [AnalyticsController::class, 'index']
+    )->name('admin.analytics.index');
 
-// ============================================================
-// ADMIN PROFILE
-// ============================================================
+    // ============================================================
+    // ADMIN PROFILE
+    // ============================================================
 
-Route::get(
-    '/admin/profile',
-    [AdminProfileController::class, 'edit']
-)->name('admin.profile.edit');
+    Route::get(
+        '/admin/profile',
+        [AdminProfileController::class, 'edit']
+    )->name('admin.profile.edit');
 
-Route::patch(
-    '/admin/profile',
-    [AdminProfileController::class, 'update']
-)->name('admin.profile.update');
+    Route::patch(
+        '/admin/profile',
+        [AdminProfileController::class, 'update']
+    )->name('admin.profile.update');
 
-Route::get('/admin/settings', [SettingController::class, 'index'])
-    ->name('settings.index');
+    Route::get('/admin/settings', [SettingController::class, 'index'])
+        ->name('settings.index');
 
-Route::post('/admin/settings/gcash-qr', [SettingController::class, 'updateGcashQr'])
-    ->name('settings.gcash-qr.update');
+    Route::post('/admin/settings/gcash-qr', [SettingController::class, 'updateGcashQr'])
+        ->name('settings.gcash-qr.update');
+
 });
+
+
+
 
 
 /*
@@ -271,6 +295,27 @@ Route::post('/admin/settings/gcash-qr', [SettingController::class, 'updateGcashQ
 */
 
 Route::middleware(['auth', 'customer'])->group(function () {
+
+    Route::get('/customer/settings', [SettingsController::class, 'index'])
+        ->name('customer.settings');
+
+    Route::patch('/customer/settings', [SettingsController::class, 'update'])
+        ->name('customer.settings.update');
+
+    Route::post(
+        '/customer/orders/items/{saleItem}/review',
+        [ReviewController::class, 'store']
+    )->name('customer.reviews.store');
+
+    Route::post(
+        '/customer/favorites/{product}/toggle',
+        [FavoriteController::class, 'toggle']
+    )->name('customer.favorites.toggle');
+
+    Route::get(
+        '/customer/favorites',
+        [FavoriteController::class, 'index']
+    )->name('customer.favorites');
 
     // ============================================================
     // CUSTOMER DASHBOARD
@@ -385,9 +430,9 @@ Route::middleware(['auth', 'customer'])->group(function () {
     )->name('customer.checkout.success');
 
     Route::patch(
-    '/customer/notifications/{notification}/read',
-    [NotificationController::class, 'markAsRead']
-)->name('customer.notifications.read');
+        '/customer/notifications/{notification}/read',
+        [NotificationController::class, 'markAsRead']
+    )->name('customer.notifications.read');
 
 
     // ============================================================
@@ -406,11 +451,11 @@ Route::middleware(['auth', 'customer'])->group(function () {
         '/customer/orders/{sale}',
         [CustomerOrderController::class, 'show']
     )->name('customer.order.show');
-    
+
     Route::patch(
-    '/customer/orders/{sale}/gcash/resubmit',
-    [CustomerOrderController::class, 'resubmitGcashPayment']
-)->name('customer.order.gcash.resubmit');
+        '/customer/orders/{sale}/gcash/resubmit',
+        [CustomerOrderController::class, 'resubmitGcashPayment']
+    )->name('customer.order.gcash.resubmit');
 
     // Cancel order
     Route::post(

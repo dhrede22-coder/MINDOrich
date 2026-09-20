@@ -1574,20 +1574,10 @@
     }
 
 }
-/* =====================================================
-
-
-
-/* =====================================================
-   SHOP — SCOPED UNDER .shop-page
-   Prevents Shop styles from overriding Product Details.
-===================================================== */
-/* =====================================================
-   CURRENT SHOP CSS
-   Single active Shop UI version
-===================================================== */
-
-   .shop-page MINDOrich CUSTOMER SHOP
+/* =========================================================
+   SHOP PAGE
+   All selectors are scoped under .shop-page.
+   ========================================================= */
 
 
 .shop-page{
@@ -2219,29 +2209,42 @@
    PAGINATION
 ===================================================== */
 
-.shop-page .shop-pagination{
-    display:flex;
-    justify-content:center;
-    margin-top:40px;
+.shop-page .shop-pagination {
+    margin-top: 40px;
 }
 
-.shop-page .shop-pagination .pagination{
-    gap:6px;
+.shop-page .shop-pagination nav {
+    width: 100%;
 }
 
-.shop-page .shop-pagination .page-link{
-    border:1px solid #e4dfd7;
-    color:#555;
-    border-radius:8px !important;
-    padding:9px 13px;
+.shop-page .shop-pagination .pagination {
+    gap: 6px;
+    margin-bottom: 0;
 }
 
-.shop-page .shop-pagination .page-item.active .page-link{
-    background:#e9aa00;
-    border-color:#e9aa00;
-    color:#fff;
+.shop-page .shop-pagination .page-link {
+    border: 1px solid #e4dfd7;
+    color: #555;
+    border-radius: 8px !important;
+    padding: 9px 13px;
 }
 
+.shop-page .shop-pagination .page-item.active .page-link {
+    color: #fff;
+}
+
+@media (max-width: 575px) {
+
+    .shop-page .shop-pagination nav {
+        width: 100%;
+    }
+
+    .shop-page .shop-pagination .pagination {
+        justify-content: center;
+        margin-bottom: 0;
+    }
+
+}
 
 /* =====================================================
    RESPONSIVE
@@ -2308,6 +2311,10 @@
 
 @media(max-width:550px){
 
+    /* ---------------------------------------------------------
+       MOBILE SHOP HERO
+       --------------------------------------------------------- */
+
     .shop-page .shop-intro h1{
         font-size:31px;
     }
@@ -2319,16 +2326,52 @@
     .shop-page .shop-search{
         flex-direction:column;
         padding:8px;
+        width:100%;
+        box-sizing:border-box;
     }
 
     .shop-page .shop-search-input{
         width:100%;
         padding:12px;
+        box-sizing:border-box;
     }
 
     .shop-page .shop-search button{
         width:100%;
     }
+
+    /* ---------------------------------------------------------
+       MOBILE CATEGORY GRID
+       Categories wrap into two columns instead of overflowing
+       horizontally on small screens.
+       --------------------------------------------------------- */
+
+    .shop-page .category-list{
+        display:grid;
+        grid-template-columns:repeat(2,minmax(0,1fr));
+        gap:10px;
+        width:100%;
+        max-width:none;
+        margin:24px auto 0;
+        padding:0;
+        overflow:visible;
+        box-sizing:border-box;
+    }
+
+    .shop-page .category-chip{
+        width:100%;
+        min-width:0;
+        padding:11px 10px;
+        justify-content:center;
+        text-align:center;
+        white-space:normal;
+        line-height:1.2;
+        box-sizing:border-box;
+    }
+
+    /* ---------------------------------------------------------
+       MOBILE PRODUCT GRID
+       --------------------------------------------------------- */
 
     .shop-page .product-grid{
         grid-template-columns:1fr;
@@ -2338,20 +2381,92 @@
         height:280px;
     }
 
+    /* ---------------------------------------------------------
+       MOBILE FILTER BAR
+       All filter groups stack vertically so the controls fit
+       comfortably within narrow phone screens.
+       --------------------------------------------------------- */
+
     .shop-page .shop-filter-bar{
         flex-direction:column;
         align-items:stretch;
+        width:100%;
+        gap:16px;
+        box-sizing:border-box;
     }
 
-    .shop-page .filter-group,.shop-page .price-filter,.shop-page .sort-group{
-        flex-wrap:wrap;
+    .shop-page .filter-group,
+    .shop-page .price-filter,
+    .shop-page .sort-group{
+        width:100%;
+        min-width:0;
+        margin-left:0;
+        box-sizing:border-box;
     }
 
+    /* Filter By buttons */
+    .shop-page .filter-group{
+        display:flex;
+        align-items:center;
+        gap:8px;
+    }
+
+    .shop-page .filter-pill{
+        flex:1 1 0;
+        min-width:0;
+        text-align:center;
+    }
+
+    /* Price range */
+    .shop-page .price-filter{
+        display:grid;
+        grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);
+        align-items:center;
+        gap:8px;
+    }
+
+    .shop-page .price-filter .filter-label{
+        grid-column:1 / -1;
+        margin-bottom:2px;
+    }
+
+    .shop-page .price-filter input{
+        width:100%;
+        min-width:0;
+        box-sizing:border-box;
+    }
+
+    /* Sort */
+    .shop-page .sort-group{
+        display:flex;
+        flex-direction:column;
+        align-items:stretch;
+        gap:6px;
+    }
+
+    .shop-page .sort-group select{
+        width:100%;
+        min-width:0;
+        box-sizing:border-box;
+    }
+
+    /* Apply button */
     .shop-page .filter-search-btn{
         width:100%;
+        margin:0;
+    }
+
+    /* Prevent horizontal page overflow */
+    .shop-page{
+        overflow-x:hidden;
     }
 
 }
+
+/* =========================================================
+   SHOP BUY NOW BUTTON
+   ========================================================= */
+
 .shop-page .buy-now-btn{
     flex: 1;
 
@@ -2383,9 +2498,10 @@
 
     transform: translateY(-2px);
 }
-/* =====================================================
-   SHOP FORCE FIX
-===================================================== */
+/* =========================================================
+   SHOP PRODUCT CARD OVERRIDES
+   Keeps the product grid/card structure consistent.
+   ========================================================= */
 
 .shop-page {
     background: #f7f8fc;
@@ -2517,32 +2633,43 @@
 
 }
 /* =========================================================
-   CUSTOMER NAVBAR - RESPONSIVE
+   CUSTOMER NAVBAR — RESPONSIVE
+   Mobile hamburger menu and compact profile controls.
    ========================================================= */
 
+/* Mobile menu button */
 .customer-mobile-menu-btn {
     display: none;
     border: none;
     background: transparent;
     color: #1f2937;
-    font-size: 28px;
+    font-size: 27px;
     line-height: 1;
     padding: 6px 8px;
     cursor: pointer;
 }
 
+
+/* Navigation wrapper */
 .customer-nav-wrapper {
     display: flex;
     align-items: center;
 }
 
+
+/* Navigation inner */
 .customer-nav-inner {
     display: flex;
     align-items: center;
 }
 
-/* Desktop */
+
+/* =========================================================
+   DESKTOP NAVBAR
+   ========================================================= */
+
 @media (min-width: 768px) {
+
     .customer-nav-wrapper {
         display: flex !important;
         width: auto;
@@ -2554,71 +2681,130 @@
         align-items: center !important;
         width: auto;
     }
+
 }
 
-/* Mobile */
+
+/* =========================================================
+   MOBILE NAVBAR
+   ========================================================= */
+
 @media (max-width: 767.98px) {
 
     .top-navbar {
+        position: sticky;
+        top: 0;
+        z-index: 999;
         display: flex;
         align-items: center;
         justify-content: space-between;
         flex-wrap: wrap;
-        gap: 8px;
-        padding: 12px 16px;
+        gap: 6px;
+        padding: 10px 16px;
     }
 
+
+    /* Hamburger */
     .customer-mobile-menu-btn {
         display: block;
         margin-left: auto;
     }
 
-    .customer-nav-wrapper {
-        width: 100%;
-        margin-top: 10px;
+
+    /* Collapsed menu hidden */
+    .customer-nav-wrapper.collapse:not(.show) {
+        display: none;
     }
 
-    .customer-nav-inner {
-        width: 100%;
-        display: flex;
-        flex-direction: column;
-        align-items: stretch !important;
-        gap: 8px !important;
-        padding: 8px 0 4px;
-    }
 
-    .customer-nav-link {
+    /* Open menu */
+    .customer-nav-wrapper.collapse.show {
         display: block;
         width: 100%;
-        padding: 10px 12px;
-        text-decoration: none;
+        margin-top: 8px;
+        padding: 10px 0 4px;
+        border-top: 1px solid #eeeeee;
+        background: #ffffff;
     }
 
+
+    /* Navigation items */
+    .customer-nav-inner {
+    width: 100%;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px 10px;
+    padding: 4px 0;
+}
+
+
+    /* Home / Shop / Order / Cart */
+    .customer-nav-link {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        padding: 10px 12px;
+        border-radius: 9px;
+        text-decoration: none;
+        color: #3b2a20 !important;
+        background: #fafafa;
+    }
+
+    .customer-nav-link:hover {
+        background: #fff8e8;
+    }
+
+
+    /* Notification dropdown */
     .customer-nav-inner > .dropdown {
         width: 100%;
     }
 
-    .notification-btn {
-        width: 100%;
-        text-align: left;
-        padding: 10px 12px;
+    .customer-nav-inner > .dropdown:nth-last-child(2) {
+        display: flex;
+        align-items: center;
     }
 
-    .customer-profile-btn {
+
+    /* Notification button */
+    .customer-nav-inner .notification-btn {
+        width: 40px;
+        height: 40px;
+        padding: 0;
+        margin: 0;
+        border-radius: 50%;
+        justify-content: center;
+        text-align: center;
+    }
+
+
+    /* Profile */
+    .customer-nav-inner .customer-profile-btn {
         width: 100%;
+        min-height: 40px;
         display: flex;
         align-items: center;
         justify-content: flex-start;
-        padding: 10px 12px;
+        padding: 9px 12px;
+        border-radius: 9px;
     }
 
+
+    /* Notification dropdown menu */
+    .customer-nav-inner .notification-menu {
+        width: 280px;
+        max-width: calc(100vw - 32px);
+        margin-top: 6px !important;
+    }
+
+
+    /* Regular profile dropdown */
     .customer-nav-inner .dropdown-menu {
-        width: 100%;
-        min-width: 0;
-        margin-top: 5px !important;
+        max-width: calc(100vw - 32px);
     }
 
-    /* Prevent long brand text from breaking the navbar */
+
+    /* Brand */
     .customer-brand {
         max-width: calc(100vw - 70px);
     }
@@ -2631,13 +2817,18 @@
     .customer-brand h3 {
         font-size: 22px;
     }
+
 }
 
-/* Small phones */
+
+/* =========================================================
+   SMALL PHONE
+   ========================================================= */
+
 @media (max-width: 575.98px) {
 
     .top-navbar {
-        padding: 10px 12px;
+        padding: 9px 12px;
     }
 
     .customer-brand img {
@@ -2656,9 +2847,20 @@
     .customer-mobile-menu-btn {
         font-size: 25px;
     }
+
+    .customer-nav-inner {
+        gap: 5px 8px;
+    }
+
+    .customer-nav-link {
+        padding: 9px 10px;
+        font-size: 14px;
+    }
+
 }
 /* =========================================================
-   ORDER DETAILS - MOBILE HEADER
+   ORDER DETAILS — MOBILE HEADER
+   Stacks the order header and Back button on phones.
    ========================================================= */
 
 @media (max-width: 767.98px) {

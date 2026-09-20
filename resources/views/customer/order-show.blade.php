@@ -5,6 +5,33 @@
 @section('content')
 
 <div class="container py-5">
+    @if(session('success'))
+    <div class="alert alert-success alert-dismissible fade show rounded-3" role="alert">
+        <i class="bi bi-check-circle me-2"></i>
+        {{ session('success') }}
+
+        <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="alert"
+            aria-label="Close"
+        ></button>
+    </div>
+@endif
+
+@if(session('error'))
+    <div class="alert alert-danger alert-dismissible fade show rounded-3" role="alert">
+        <i class="bi bi-exclamation-circle me-2"></i>
+        {{ session('error') }}
+
+        <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="alert"
+            aria-label="Close"
+        ></button>
+    </div>
+@endif
 
     {{-- Header --}}
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -96,6 +123,58 @@
                                     ×
                                     {{ $item->quantity }}
                                 </p>
+
+                                @if(
+    $sale->sale_type === 'Online' &&
+    $sale->status === 'Delivered' &&
+    !$item->review()->exists()
+)
+    <form
+        action="{{ route('customer.reviews.store', $item) }}"
+        method="POST"
+        class="mt-3"
+    >
+        @csrf
+
+        <div class="mb-2">
+            <label class="form-label fw-semibold mb-1">
+                Rate this product
+            </label>
+
+            <div>
+                @for($rating = 1; $rating <= 5; $rating++)
+                    <label class="me-2">
+                        <input
+                            type="radio"
+                            name="rating"
+                            value="{{ $rating }}"
+                            required
+                        >
+                        {{ $rating }} ★
+                    </label>
+                @endfor
+            </div>
+        </div>
+
+        <div class="mb-2">
+            <textarea
+                name="body"
+                class="form-control"
+                rows="2"
+                maxlength="2000"
+                placeholder="Write a review (optional)..."
+            >{{ old('body') }}</textarea>
+        </div>
+
+        <button
+            type="submit"
+            class="btn btn-sm btn-dark"
+        >
+            <i class="bi bi-star me-1"></i>
+            Submit Review
+        </button>
+    </form>
+@endif
 
                             </div>
 

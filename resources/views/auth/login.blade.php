@@ -63,11 +63,26 @@
                     Password
                 </label>
 
-                <input
-                    type="password"
-                    name="password"
-                    class="form-control @error('password') is-invalid @enderror"
-                    required>
+                <div class="position-relative">
+
+    <input
+        type="password"
+        id="login-password"
+        name="password"
+        class="form-control pe-5 @error('password') is-invalid @enderror"
+        required
+    >
+
+    <button
+        type="button"
+        id="toggle-login-password"
+        class="password-toggle-btn"
+        aria-label="Show password"
+    >
+        <i class="bi bi-eye"></i>
+    </button>
+
+</div>
 
                 @error('password')
                     <div class="invalid-feedback">
@@ -118,5 +133,56 @@
     </div>
 
 </div>
+
+<style>
+    .password-toggle-btn {
+        position: absolute;
+        top: 50%;
+        right: 12px;
+        transform: translateY(-50%);
+        border: none;
+        background: transparent;
+        padding: 4px;
+        margin: 0;
+        color: #6c757d;
+        font-size: 18px;
+        line-height: 1;
+        cursor: pointer;
+    }
+
+    .password-toggle-btn:hover {
+        color: #333;
+    }
+
+    .password-toggle-btn:focus {
+        outline: none;
+        box-shadow: none;
+    }
+</style>
+<script>
+    document
+        .getElementById('toggle-login-password')
+        .addEventListener('click', function () {
+
+            const password = document.getElementById('login-password');
+            const icon = this.querySelector('i');
+
+            if (password.type === 'password') {
+
+                password.type = 'text';
+                icon.classList.remove('bi-eye');
+                icon.classList.add('bi-eye-slash');
+                this.setAttribute('aria-label', 'Hide password');
+
+            } else {
+
+                password.type = 'password';
+                icon.classList.remove('bi-eye-slash');
+                icon.classList.add('bi-eye');
+                this.setAttribute('aria-label', 'Show password');
+
+            }
+        });
+</script>
 
 @endsection

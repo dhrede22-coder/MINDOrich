@@ -11,7 +11,11 @@ class ShopController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Product::with(['category', 'producer'])
+        $query = Product::with([
+            'category',
+            'producer',
+            'promotions',
+        ])
             ->where('status', 'Available');
 
         // Search by product name
@@ -70,7 +74,9 @@ class ShopController extends Controller
 
         $products = $query->paginate(12)->withQueryString();
 
-        $categories = Category::orderBy('category_name')->get();
+        $categories = Category::where('status', 'Active')
+            ->orderBy('category_name')
+            ->get();
 
         return view('customer.shop', compact(
             'products',
@@ -90,17 +96,20 @@ class ShopController extends Controller
         // Only available products can be viewed
         abort_if($product->status !== 'Available', 404);
 
-        // Load product information and images
+        // Load product information, images, reviews, and promotions
         $product->load([
             'category',
             'producer',
-            'productImages'
+            'productImages',
+            'reviews.user',
+            'promotions',
         ]);
 
         // Related products
         $relatedProducts = Product::with([
                 'category',
-                'producer'
+                'producer',
+                'promotions',
             ])
             ->where('status', 'Available')
             ->where('id', '!=', $product->id)

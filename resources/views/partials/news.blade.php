@@ -21,6 +21,7 @@
 
         </div>
 
+
         @php
 
         $news = [
@@ -50,44 +51,50 @@
 
         @endphp
 
+
         <div class="row g-4">
 
             @foreach($news as $item)
 
-            <div class="col-lg-4">
+                <div class="col-12 col-md-6 col-lg-4">
 
-                <div class="card border-0 shadow-sm rounded-4 h-100">
+                    <div class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden public-news-card">
 
-                    <img
-                        src="{{ asset('images/news/'.$item['image']) }}"
-                        class="card-img-top"
-                        alt="{{ $item['title'] }}"
-                        style="height:240px; object-fit:cover;">
+                        <!-- News Image -->
+                        <img
+                            src="{{ asset('images/news/' . $item['image']) }}"
+                            class="card-img-top public-news-image"
+                            alt="{{ $item['title'] }}"
+                        >
 
-                    <div class="card-body">
 
-                        <small class="text-warning fw-semibold">
-                            {{ $item['date'] }}
-                        </small>
+                        <!-- News Content -->
+                        <div class="card-body d-flex flex-column">
 
-                        <h5 class="fw-bold mt-2">
-                            {{ $item['title'] }}
-                        </h5>
+                            <small class="text-warning fw-semibold">
+                                {{ $item['date'] }}
+                            </small>
 
-                        <p class="text-secondary">
-                            {{ $item['description'] }}
-                        </p>
+                            <h5 class="fw-bold mt-2 mb-3 public-news-title">
+                                {{ $item['title'] }}
+                            </h5>
 
-                        <a href="/news"
-                           class="btn btn-outline-warning">
-                            Read More
-                        </a>
+                            <p class="text-secondary mb-4">
+                                {{ $item['description'] }}
+                            </p>
+
+                            <a
+                                href="/news"
+                                class="btn btn-outline-warning mt-auto align-self-start"
+                            >
+                                Read More
+                            </a>
+
+                        </div>
 
                     </div>
 
                 </div>
-
-            </div>
 
             @endforeach
 
@@ -96,3 +103,33 @@
     </div>
 
 </section>
+
+
+<style>
+    .public-news-image {
+        width: 100%;
+        height: clamp(180px, 30vw, 240px);
+        object-fit: cover;
+        object-position: center;
+    }
+
+    .public-news-title {
+        line-height: 1.3;
+    }
+
+    @media (max-width: 575.98px) {
+
+        .public-news-image {
+            height: 210px;
+        }
+
+        .public-news-card .card-body {
+            padding: 1.1rem;
+        }
+
+        .public-news-title {
+            font-size: 1.05rem;
+        }
+
+    }
+</style>

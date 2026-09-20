@@ -407,24 +407,29 @@
             class="form-select"
         >
             <option value="Pending"
-                {{ $sale->status === 'Pending' ? 'selected' : '' }}>
-                Pending
-            </option>
+    {{ $sale->status === 'Pending' ? 'selected' : '' }}>
+    Pending
+</option>
 
-            <option value="Processing"
-                {{ $sale->status === 'Processing' ? 'selected' : '' }}>
-                Processing
-            </option>
+<option value="Processing"
+    {{ $sale->status === 'Processing' ? 'selected' : '' }}>
+    Processing
+</option>
 
-            <option value="Completed"
-                {{ $sale->status === 'Completed' ? 'selected' : '' }}>
-                Completed
-            </option>
+<option value="To Deliver"
+    {{ $sale->status === 'To Deliver' ? 'selected' : '' }}>
+    To Deliver
+</option>
 
-            <option value="Cancelled"
-                {{ $sale->status === 'Cancelled' ? 'selected' : '' }}>
-                Cancelled
-            </option>
+<option value="Delivered"
+    {{ $sale->status === 'Delivered' ? 'selected' : '' }}>
+    Delivered
+</option>
+
+<option value="Cancelled"
+    {{ $sale->status === 'Cancelled' ? 'selected' : '' }}>
+    Cancelled
+</option>
         </select>
 
         <button

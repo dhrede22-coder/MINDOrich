@@ -152,12 +152,13 @@ class ProductController extends Controller
     $query->where('name', 'Customer');
 })
 ->where('verification_status', 'Approved')
+->where('product_notifications', true)
 ->get()
 ->each(function ($customer) use ($product) {
     $customer->notify(
         new \App\Notifications\CustomerNotification(
             'New Product Available',
-            "A new product, {$product->name}, has been added to MINDOrich.",
+            "A new product, {$product->product_name}, has been added to MINDOrich.",
             'product',
             $product->id
         )

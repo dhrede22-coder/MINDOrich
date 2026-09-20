@@ -145,48 +145,116 @@ class CustomerController extends Controller
      * Approves the customer's submitted verification.
      */
     public function approve(User $user)
-    {
-        /*
-        |--------------------------------------------------------------------------
-        | MAKE SURE THE USER IS A CUSTOMER
-        |--------------------------------------------------------------------------
-        */
-        if (!$user->role || $user->role->name !== 'Customer') {
-            abort(404);
-        }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | APPROVE VERIFICATION
-        |--------------------------------------------------------------------------
-        */
-        $user->update([
-            'verification_status' => 'Approved',
-            'verified_at' => now(),
-            'verification_notes' => null,
-        ]);
-        $user->notify(
-    new \App\Notifications\CustomerNotification(
-        'Account Verified',
-        'Your account has been approved and verified. You can now place orders.',
-        'verification'
-    )
-);
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | RETURN TO CUSTOMER DETAILS
-        |--------------------------------------------------------------------------
-        */
-        return redirect()
-            ->route('admin.customers.show', $user)
-            ->with(
-                'success',
-                'Customer account has been approved successfully.'
-            );
+{
+    /*
+    |--------------------------------------------------------------------------
+    | MAKE SURE THE USER IS A CUSTOMER
+    |--------------------------------------------------------------------------
+    */
+    if (!$user->role || $user->role->name !== 'Customer') {
+        abort(404);
     }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | CHECK VERIFICATION COMPLETENESS
+    |--------------------------------------------------------------------------
+    |
+    | New verification records use the new structured address
+    | and front/back ID fields.
+    |
+    | Old records continue using the legacy fields so existing
+    | verification data will not be broken.
+    |
+    */
+
+    $hasNewVerificationData =
+        !empty($user->house_street) ||
+        !empty($user->barangay) ||
+        !empty($user->municipality_city) ||
+        !empty($user->province) ||
+        !empty($user->postal_code) ||
+        !empty($user->id_front_image) ||
+        !empty($user->id_back_image);
+
+    if ($hasNewVerificationData) {
+        $newVerificationComplete =
+            !empty($user->contact_number) &&
+            !empty($user->house_street) &&
+            !empty($user->barangay) &&
+            !empty($user->municipality_city) &&
+            !empty($user->province) &&
+            !empty($user->postal_code) &&
+            !empty($user->id_type) &&
+            !empty($user->id_number) &&
+            !empty($user->id_front_image) &&
+            !empty($user->id_back_image);
+
+        if (!$newVerificationComplete) {
+            return redirect()
+                ->route('admin.customers.show', $user)
+                ->with(
+                    'error',
+                    'Customer verification is incomplete. Please review the submitted contact information, delivery address, and valid ID details before approving.'
+                );
+        }
+    } else {
+        /*
+        |--------------------------------------------------------------------------
+        | LEGACY VERIFICATION CHECK
+        |--------------------------------------------------------------------------
+        */
+        $legacyVerificationComplete =
+            !empty($user->contact_number) &&
+            !empty($user->address) &&
+            !empty($user->id_type) &&
+            !empty($user->id_number) &&
+            !empty($user->id_image);
+
+        if (!$legacyVerificationComplete) {
+            return redirect()
+                ->route('admin.customers.show', $user)
+                ->with(
+                    'error',
+                    'Customer verification is incomplete. Please review the submitted contact information, delivery address, and valid ID details before approving.'
+                );
+        }
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | APPROVE VERIFICATION
+    |--------------------------------------------------------------------------
+    */
+    $user->update([
+        'verification_status' => 'Approved',
+        'verified_at' => now(),
+        'verification_notes' => null,
+    ]);
+
+    $user->notify(
+        new \App\Notifications\CustomerNotification(
+            'Account Verified',
+            'Your account has been approved and verified. You can now place orders.',
+            'verification'
+        )
+    );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | RETURN TO CUSTOMER DETAILS
+    |--------------------------------------------------------------------------
+    */
+    return redirect()
+        ->route('admin.customers.show', $user)
+        ->with(
+            'success',
+            'Customer account has been approved successfully.'
+        );
+}
 
 
     /**

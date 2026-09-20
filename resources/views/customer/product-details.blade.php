@@ -142,31 +142,82 @@
 
 
                         {{-- Rating --}}
-                        <div class="product-rating">
+@php
+    $reviewCount = $product->reviews->count();
+    $averageRating = $reviewCount
+        ? round($product->reviews->avg('rating'), 1)
+        : 0;
 
-                            <div class="rating-stars">
+    $fullStars = (int) floor($averageRating);
+    $hasHalfStar = ($averageRating - $fullStars) >= 0.5;
+    $emptyStars = 5 - $fullStars - ($hasHalfStar ? 1 : 0);
+@endphp
 
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star"></i>
+<div class="product-rating">
 
-                            </div>
+    <div class="rating-stars">
 
-                            <span>
-                                Product
-                            </span>
+        @for($i = 0; $i < $fullStars; $i++)
+            <i class="bi bi-star-fill"></i>
+        @endfor
 
-                        </div>
+        @if($hasHalfStar)
+            <i class="bi bi-star-half"></i>
+        @endif
+
+        @for($i = 0; $i < $emptyStars; $i++)
+            <i class="bi bi-star"></i>
+        @endfor
+
+    </div>
+
+    <span>
+        {{ number_format($averageRating, 1) }}
+        ({{ $reviewCount }}
+        {{ $reviewCount === 1 ? 'review' : 'reviews' }})
+    </span>
+
+</div>
 
 
                         {{-- Price --}}
-                        <div class="product-price">
+@php
+    $pricing = $product->pricing();
+@endphp
 
-                            ₱{{ number_format($product->price, 2) }}
+<div class="product-price">
 
-                        </div>
+    @if($pricing['promotion'])
+
+        <div class="mb-2">
+            <span
+                class="badge bg-danger"
+                style="font-size:12px;"
+            >
+                🔥 HOT DEAL
+            </span>
+        </div>
+
+        <div>
+            <span
+                class="text-muted text-decoration-line-through me-2"
+                style="font-size:18px;"
+            >
+                ₱{{ number_format($pricing['original_price'], 2) }}
+            </span>
+
+            <strong>
+                ₱{{ number_format($pricing['effective_price'], 2) }}
+            </strong>
+        </div>
+
+    @else
+
+        ₱{{ number_format($pricing['original_price'], 2) }}
+
+    @endif
+
+</div>
 
 
                         {{-- Description --}}
@@ -365,6 +416,95 @@
         </div>
 
     </section>
+
+    {{-- =====================================================
+     CUSTOMER REVIEWS
+===================================================== --}}
+<section class="product-reviews-section py-5">
+    <div class="container">
+
+        <div class="mb-4">
+            <span class="text-uppercase small fw-semibold text-muted">
+                CUSTOMER FEEDBACK
+            </span>
+
+            <h2 class="fw-bold mb-1">
+                Reviews & Ratings
+            </h2>
+
+            <p class="text-muted mb-0">
+                See what customers say about this product.
+            </p>
+        </div>
+
+        @if($product->reviews->count())
+
+            @foreach($product->reviews->sortByDesc('created_at') as $review)
+
+                <div class="card border-0 shadow-sm rounded-4 mb-3">
+                    <div class="card-body p-4">
+
+                        <div class="d-flex justify-content-between align-items-start gap-3">
+
+                            <div>
+                                <h6 class="fw-bold mb-1">
+                                    {{ $review->user->name ?? 'Customer' }}
+                                </h6>
+
+                                <div class="text-warning mb-2">
+                                    @for($i = 1; $i <= 5; $i++)
+                                        @if($i <= $review->rating)
+                                            <i class="bi bi-star-fill"></i>
+                                        @else
+                                            <i class="bi bi-star"></i>
+                                        @endif
+                                    @endfor
+                                </div>
+                            </div>
+
+                            <small class="text-muted">
+                                {{ $review->created_at->format('M d, Y') }}
+                            </small>
+
+                        </div>
+
+                        @if($review->body)
+                            <p class="text-muted mb-0">
+                                {{ $review->body }}
+                            </p>
+                        @else
+                            <p class="text-muted small fst-italic mb-0">
+                                No written review.
+                            </p>
+                        @endif
+
+                    </div>
+                </div>
+
+            @endforeach
+
+        @else
+
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-body p-5 text-center">
+
+                    <i class="bi bi-chat-square-text fs-1 text-muted"></i>
+
+                    <h5 class="fw-bold mt-3">
+                        No reviews yet
+                    </h5>
+
+                    <p class="text-muted mb-0">
+                        Be the first customer to review this product.
+                    </p>
+
+                </div>
+            </div>
+
+        @endif
+
+    </div>
+</section>
 
 
     {{-- =====================================================

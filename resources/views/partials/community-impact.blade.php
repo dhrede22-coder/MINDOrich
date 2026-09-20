@@ -20,17 +20,19 @@
 
         </div>
 
-        <div class="row text-center g-4">
 
+        <div class="row text-center g-3 g-lg-4">
+
+            <!-- Mangyan Tribes -->
             <div class="col-6 col-lg-3">
 
-                <div class="card border-0 shadow-sm rounded-4 py-4 h-100">
+                <div class="card border-0 shadow-sm rounded-4 py-4 px-2 h-100 public-impact-card">
 
-                    <h1 class="display-5 fw-bold text-warning">
+                    <h1 class="fw-bold text-warning public-impact-number">
                         8
                     </h1>
 
-                    <h5 class="fw-bold">
+                    <h5 class="fw-bold public-impact-title">
                         Mangyan Tribes
                     </h5>
 
@@ -42,15 +44,17 @@
 
             </div>
 
+
+            <!-- Registered Artisans -->
             <div class="col-6 col-lg-3">
 
-                <div class="card border-0 shadow-sm rounded-4 py-4 h-100">
+                <div class="card border-0 shadow-sm rounded-4 py-4 px-2 h-100 public-impact-card">
 
-                    <h1 class="display-5 fw-bold text-warning">
+                    <h1 class="fw-bold text-warning public-impact-number">
                         100+
                     </h1>
 
-                    <h5 class="fw-bold">
+                    <h5 class="fw-bold public-impact-title">
                         Registered Artisans
                     </h5>
 
@@ -62,15 +66,17 @@
 
             </div>
 
+
+            <!-- Products -->
             <div class="col-6 col-lg-3">
 
-                <div class="card border-0 shadow-sm rounded-4 py-4 h-100">
+                <div class="card border-0 shadow-sm rounded-4 py-4 px-2 h-100 public-impact-card">
 
-                    <h1 class="display-5 fw-bold text-warning">
+                    <h1 class="fw-bold text-warning public-impact-number">
                         500+
                     </h1>
 
-                    <h5 class="fw-bold">
+                    <h5 class="fw-bold public-impact-title">
                         Products
                     </h5>
 
@@ -82,15 +88,17 @@
 
             </div>
 
+
+            <!-- Communities -->
             <div class="col-6 col-lg-3">
 
-                <div class="card border-0 shadow-sm rounded-4 py-4 h-100">
+                <div class="card border-0 shadow-sm rounded-4 py-4 px-2 h-100 public-impact-card">
 
-                    <h1 class="display-5 fw-bold text-warning">
+                    <h1 class="fw-bold text-warning public-impact-number">
                         15+
                     </h1>
 
-                    <h5 class="fw-bold">
+                    <h5 class="fw-bold public-impact-title">
                         Communities
                     </h5>
 
@@ -107,3 +115,41 @@
     </div>
 
 </section>
+
+
+<style>
+    .public-impact-number {
+        font-size: clamp(2rem, 8vw, 3rem);
+        line-height: 1;
+        margin-bottom: 0.75rem;
+    }
+
+    .public-impact-title {
+        line-height: 1.25;
+        margin-bottom: 0.5rem;
+    }
+
+    .public-impact-card {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    @media (max-width: 575.98px) {
+
+        .public-impact-card {
+            padding-top: 1.5rem !important;
+            padding-bottom: 1.5rem !important;
+        }
+
+        .public-impact-title {
+            font-size: 1rem;
+        }
+
+        .public-impact-card p {
+            font-size: 0.78rem;
+            line-height: 1.4;
+        }
+
+    }
+</style>

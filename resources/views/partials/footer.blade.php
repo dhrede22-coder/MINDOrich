@@ -1,18 +1,19 @@
-<footer class="bg-dark text-white pt-5 pb-3">
+<footer class="bg-dark text-white pt-5 pb-3 public-footer">
 
     <div class="container">
 
         <div class="row gy-4">
 
             <!-- Logo & About -->
-            <div class="col-lg-4">
+            <div class="col-12 col-sm-6 col-lg-4">
 
                 <div class="d-flex align-items-center mb-3">
 
-                    <img src="{{ asset('image/logo/mindorich-logo.png') }}"
-                         alt="MINDOrich Logo"
-                         width="55"
-                         class="me-2">
+                    <img
+                        src="{{ asset('image/logo/mindorich-logo.png') }}"
+                        alt="MINDOrich Logo"
+                        class="me-2 public-footer-logo"
+                    >
 
                     <div>
 
@@ -20,7 +21,7 @@
                             INDOrich
                         </h4>
 
-                        <small>
+                        <small class="public-footer-subtitle">
                             Pampamayanang Mangyan Ugnayan Inc.
                         </small>
 
@@ -28,7 +29,7 @@
 
                 </div>
 
-                <p class="text-light">
+                <p class="text-light mb-0">
 
                     MINDOrich is an Indigenous Artisan Profiling and
                     E-Commerce Platform dedicated to preserving Mangyan
@@ -39,53 +40,77 @@
 
             </div>
 
-            <!-- Quick Links -->
 
-            <div class="col-lg-2">
+            <!-- Quick Links -->
+            <div class="col-6 col-sm-6 col-lg-2">
 
                 <h5 class="text-warning mb-3">
                     Quick Links
                 </h5>
 
-                <ul class="list-unstyled">
+                <ul class="list-unstyled public-footer-links">
 
-                    <li><a href="/" class="text-white text-decoration-none">Home</a></li>
+                    <li>
+                        <a href="/" class="text-white text-decoration-none">
+                            Home
+                        </a>
+                    </li>
 
-                    <li><a href="/about" class="text-white text-decoration-none">About PMUI</a></li>
+                    <li>
+                        <a href="/about" class="text-white text-decoration-none">
+                            About PMUI
+                        </a>
+                    </li>
 
-                    <li><a href="/tribes" class="text-white text-decoration-none">Mangyan Tribes</a></li>
+                    <li>
+                        <a href="/tribes" class="text-white text-decoration-none">
+                            Mangyan Tribes
+                        </a>
+                    </li>
 
-                    <li><a href="/marketplace" class="text-white text-decoration-none">Marketplace</a></li>
+                    <li>
+                        <a href="/marketplace" class="text-white text-decoration-none">
+                            Marketplace
+                        </a>
+                    </li>
 
                 </ul>
 
             </div>
 
-            <!-- Explore -->
 
-            <div class="col-lg-3">
+            <!-- Explore -->
+            <div class="col-6 col-sm-6 col-lg-3">
 
                 <h5 class="text-warning mb-3">
                     Explore
                 </h5>
 
-                <ul class="list-unstyled">
+                <ul class="list-unstyled public-footer-links">
 
-                    <li>Featured Products</li>
+                    <li>
+                        Featured Products
+                    </li>
 
-                    <li>Featured Artisans</li>
+                    <li>
+                        Featured Artisans
+                    </li>
 
-                    <li>Community Impact</li>
+                    <li>
+                        Community Impact
+                    </li>
 
-                    <li>Latest News</li>
+                    <li>
+                        Latest News
+                    </li>
 
                 </ul>
 
             </div>
 
-            <!-- Contact -->
 
-            <div class="col-lg-3">
+            <!-- Contact -->
+            <div class="col-12 col-sm-6 col-lg-3">
 
                 <h5 class="text-warning mb-3">
                     Contact
@@ -111,7 +136,9 @@
 
         </div>
 
+
         <hr class="border-secondary my-4">
+
 
         <div class="text-center">
 
@@ -132,3 +159,49 @@
     </div>
 
 </footer>
+
+
+<style>
+    .public-footer-logo {
+        width: 55px;
+        height: auto;
+        flex-shrink: 0;
+    }
+
+    .public-footer-subtitle {
+        line-height: 1.2;
+    }
+
+    .public-footer-links li {
+        margin-bottom: 0.65rem;
+    }
+
+    .public-footer-links li:last-child {
+        margin-bottom: 0;
+    }
+
+    @media (max-width: 575.98px) {
+
+        .public-footer-logo {
+            width: 48px;
+        }
+
+        .public-footer h4 {
+            font-size: 1.25rem;
+        }
+
+        .public-footer-subtitle {
+            font-size: 0.7rem;
+        }
+
+        .public-footer h5 {
+            font-size: 1rem;
+        }
+
+        .public-footer p,
+        .public-footer li {
+            font-size: 0.9rem;
+        }
+
+    }
+</style>
