@@ -23,6 +23,10 @@ use App\Http\Controllers\Customer\FavoriteController;
 use App\Http\Controllers\Admin\PromotionController;
 use App\Http\Controllers\Public\HomeController;
 use App\Models\Tribe;
+use App\Http\Controllers\PurchaseController;
+use App\Http\Controllers\Admin\ExpenseController;
+use App\Http\Controllers\Admin\HistoricalPurchaseController;
+use App\Http\Controllers\Admin\HistoricalSaleController;
 
 // ================================================================
 // CUSTOMER VERIFICATION CONTROLLER
@@ -135,15 +139,27 @@ Route::middleware(['auth', 'admin'])->group(function () {
         PromotionController::class
     );
 
+    // ============================================================
+    // PURCHASES
+    // ============================================================
+
+   Route::resource(
+    'admin/purchases',
+    PurchaseController::class
+)->only(['index', 'create', 'store', 'show'])
+  ->names('admin.purchases');
+
+  Route::resource('admin/expenses', ExpenseController::class);
+
+  Route::resource('admin/historical-purchases', HistoricalPurchaseController::class);
+
+  Route::resource('admin/historical-sales', HistoricalSaleController::class);
+
 
     // ============================================================
     // INVENTORY
     // ============================================================
 
-    Route::post(
-        'admin/products/{product}/inventory/add',
-        [InventoryController::class, 'addStock']
-    )->name('products.inventory.add');
 
     Route::post(
         'admin/products/{product}/inventory/remove',

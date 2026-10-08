@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\InventoryMovement;
 use App\Models\Sale;
 use App\Models\SaleItem;
+use App\Models\PurchaseItem;
+use App\Models\SaleItemFifoAllocation;
 use Illuminate\Http\Request;
 use App\Models\Product;
 use App\Models\Category;
@@ -62,386 +64,578 @@ class OrderController extends Controller
         }
 
         $orders = $request->boolean('all')
-    ? $query->latest()->get()
-    : $query->latest()->limit(10)->get();
+            ? $query->latest()->get()
+            : $query->latest()->limit(10)->get();
 
-// Order Statistics
-$totalOrders = Sale::count();
+        // Order Statistics
+        $totalOrders = Sale::count();
 
-$pendingOrders = Sale::where(
-    'status',
-    'Pending'
-)->count();
+        $pendingOrders = Sale::where(
+            'status',
+            'Pending'
+        )->count();
 
-$processingOrders = Sale::where(
-    'status',
-    'Processing'
-)->count();
+        $processingOrders = Sale::where(
+            'status',
+            'Processing'
+        )->count();
 
-$completedOrders = Sale::where(
-    'status',
-    'Completed'
-)->count();
+        $completedOrders = Sale::where(
+            'status',
+            'Completed'
+        )->count();
 
-return view(
-    'admin.orders.index',
-    compact(
-        'orders',
-        'totalOrders',
-        'pendingOrders',
-        'processingOrders',
-        'completedOrders'
-    )
-);
-
+        return view(
+            'admin.orders.index',
+            compact(
+                'orders',
+                'totalOrders',
+                'pendingOrders',
+                'processingOrders',
+                'completedOrders'
+            )
+        );
     }
+
     /**
- * Show the form for creating a new order.
- */
-public function create()
-{
-    $products = Product::with([
-        'category',
-        'producer',
-    ])
-    ->where(
-        'stock',
-        '>',
-        0
-    )
-    ->where(
-        'status',
-        'Available'
-    )
-    ->orderBy(
-        'product_name'
-    )
-    ->get();
+     * Show the form for creating a new order.
+     */
+    public function create()
+    {
+        $products = Product::with([
+            'category',
+            'producer',
+        ])
+            ->where(
+                'stock',
+                '>',
+                0
+            )
+            ->where(
+                'status',
+                'Available'
+            )
+            ->orderBy(
+                'product_name'
+            )
+            ->get();
 
-    $categories = Category::orderBy(
-        'category_name'
-    )->get();
+        $categories = Category::orderBy(
+            'category_name'
+        )->get();
 
-    $productData = $products->map(function ($product) {
-    return [
-        'id' => $product->id,
-        'name' => $product->product_name,
-        'description' => $product->description ?? 'No description available.',
-        'price' => (float) $product->price,
-        'stock' => (int) $product->stock,
-        'category_id' => $product->category_id,
-        'category' => $product->category->category_name ?? 'Uncategorized',
-        'producer' => $product->producer->producer_name ?? '—',
-        'image' => $product->featured_image
-            ? asset('storage/' . $product->featured_image)
-            : null,
-    ];
-})->values();
+        $productData = $products->map(function ($product) {
+            return [
+                'id' => $product->id,
+                'name' => $product->product_name,
+                'description' => $product->description ?? 'No description available.',
+                'price' => (float) $product->price,
+                'stock' => (int) $product->stock,
+                'category_id' => $product->category_id,
+                'category' => $product->category->category_name ?? 'Uncategorized',
+                'producer' => $product->producer->producer_name ?? '—',
+                'image' => $product->featured_image
+                    ? asset('storage/' . $product->featured_image)
+                    : null,
+            ];
+        })->values();
 
-    return view(
-        'admin.orders.create',
-        compact(
-            'products',
-            'categories',
-            'productData'
-        )
-    );
-}
-
-public function store(Request $request)
-{
-    $validated = $request->validate([
-        'sale_type' => 'required|in:Walk-in',
-        'user_id' => 'nullable|exists:users,id',
-        'payment_method' => 'required|in:Cash,GCash',
-        'notes' => 'nullable|string',
-        'items' => 'required|array|min:1',
-        'items.*.product_id' => 'required|exists:products,id',
-        'items.*.quantity' => 'required|integer|min:1',
-    ]);
-
-    $quantitiesByProductId = [];
-
-    foreach ($validated['items'] as $item) {
-        $productId = (int) $item['product_id'];
-        $quantity = (int) $item['quantity'];
-
-        $quantitiesByProductId[$productId] =
-            ($quantitiesByProductId[$productId] ?? 0) + $quantity;
+        return view(
+            'admin.orders.create',
+            compact(
+                'products',
+                'categories',
+                'productData'
+            )
+        );
     }
 
-    try {
-        $sale = DB::transaction(function () use (
-            $validated,
-            $quantitiesByProductId
-        ) {
-            $productIds = array_keys($quantitiesByProductId);
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'sale_type' => 'required|in:Walk-in',
+            'user_id' => 'nullable|exists:users,id',
+            'payment_method' => 'required|in:Cash,GCash',
+            'notes' => 'nullable|string',
+            'items' => 'required|array|min:1',
+            'items.*.product_id' => 'required|exists:products,id',
+            'items.*.quantity' => 'required|integer|min:1',
+        ]);
 
-            $products = Product::whereIn('id', $productIds)
-                ->lockForUpdate()
-                ->get()
-                ->keyBy('id');
+        $quantitiesByProductId = [];
 
-            if ($products->count() !== count($productIds)) {
-                throw ValidationException::withMessages([
-                    'items' => 'One or more selected products are no longer available.',
+        foreach ($validated['items'] as $item) {
+
+            $productId = (int) $item['product_id'];
+            $quantity = (int) $item['quantity'];
+
+            $quantitiesByProductId[$productId] =
+                ($quantitiesByProductId[$productId] ?? 0) + $quantity;
+        }
+
+        try {
+
+            $sale = DB::transaction(function () use (
+                $validated,
+                $quantitiesByProductId
+            ) {
+
+                $productIds = array_keys($quantitiesByProductId);
+
+                $products = Product::whereIn('id', $productIds)
+                    ->lockForUpdate()
+                    ->get()
+                    ->keyBy('id');
+
+                if ($products->count() !== count($productIds)) {
+                    throw ValidationException::withMessages([
+                        'items' => 'One or more selected products are no longer available.',
+                    ]);
+                }
+
+                $lineItems = [];
+                $totalAmount = 0;
+
+                foreach ($quantitiesByProductId as $productId => $quantity) {
+
+                    $product = $products->get($productId);
+
+                    if ($product->status !== 'Available') {
+                        throw ValidationException::withMessages([
+                            'items' => "{$product->product_name} is not currently available for sale.",
+                        ]);
+                    }
+
+                    if ($quantity > $product->stock) {
+                        throw ValidationException::withMessages([
+                            'items' => "Insufficient stock for {$product->product_name}.",
+                        ]);
+                    }
+
+                    $price = (float) $product->price;
+
+                    $subtotal = round(
+                        $price * $quantity,
+                        2
+                    );
+
+                    $lineItems[] = [
+                        'product' => $product,
+                        'quantity' => $quantity,
+                        'price' => $price,
+                        'subtotal' => $subtotal,
+                    ];
+
+                    $totalAmount = round(
+                        $totalAmount + $subtotal,
+                        2
+                    );
+                }
+
+                do {
+
+                    $saleNumber = 'ORD-' . now()->format('Ymd-His') . '-'
+                        . random_int(1000, 9999);
+
+                } while (Sale::where('sale_number', $saleNumber)->exists());
+
+                $sale = Sale::create([
+                    'sale_number' => $saleNumber,
+                    'user_id' => $validated['user_id'] ?? null,
+                    'sale_type' => $validated['sale_type'],
+                    'payment_method' => $validated['payment_method'],
+                    'payment_status' => 'Paid',
+                    'status' => 'Completed',
+                    'total_amount' => $totalAmount,
+                    'notes' => $validated['notes'] ?? null,
                 ]);
-            }
 
-            $lineItems = [];
-            $totalAmount = 0;
+                foreach ($lineItems as $lineItem) {
 
-            foreach ($quantitiesByProductId as $productId => $quantity) {
-                $product = $products->get($productId);
+                    $product = $lineItem['product'];
+                    $quantity = $lineItem['quantity'];
 
-                if ($product->status !== 'Available') {
-                    throw ValidationException::withMessages([
-                        'items' => "{$product->product_name} is not currently available for sale.",
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Sale Item
+                    |--------------------------------------------------------------------------
+                    */
+
+                    $saleItem = SaleItem::create([
+                        'sale_id' => $sale->id,
+                        'product_id' => $product->id,
+                        'quantity' => $quantity,
+                        'price' => $lineItem['price'],
+                        'subtotal' => $lineItem['subtotal'],
                     ]);
-                }
 
-                if ($quantity > $product->stock) {
-                    throw ValidationException::withMessages([
-                        'items' => "Insufficient stock for {$product->product_name}.",
+                    /*
+                    |--------------------------------------------------------------------------
+                    | FIFO COST ALLOCATION
+                    |--------------------------------------------------------------------------
+                    */
+
+                    $remainingToAllocate = $quantity;
+
+                    $purchaseItems = PurchaseItem::query()
+                        ->where('product_id', $product->id)
+                        ->where('remaining_quantity', '>', 0)
+                        ->whereHas('purchase', function ($query) {
+                            $query->where('status', 'Completed');
+                        })
+                        ->orderBy('received_at')
+                        ->orderBy('id')
+                        ->lockForUpdate()
+                        ->get();
+
+                    foreach ($purchaseItems as $purchaseItem) {
+
+                        if ($remainingToAllocate <= 0) {
+                            break;
+                        }
+
+                        $availableQuantity =
+                            (int) $purchaseItem->remaining_quantity;
+
+                        $allocatedQuantity = min(
+                            $remainingToAllocate,
+                            $availableQuantity
+                        );
+
+                        $unitCost =
+                            (float) $purchaseItem->purchase_price;
+
+                        $costSubtotal = round(
+                            $allocatedQuantity * $unitCost,
+                            2
+                        );
+
+                        SaleItemFifoAllocation::create([
+                            'sale_item_id' =>
+                                $saleItem->id,
+                            'purchase_item_id' =>
+                                $purchaseItem->id,
+                            'quantity' =>
+                                $allocatedQuantity,
+                            'unit_cost' =>
+                                $unitCost,
+                            'cost_subtotal' =>
+                                $costSubtotal,
+                        ]);
+
+                        $purchaseItem->decrement(
+                            'remaining_quantity',
+                            $allocatedQuantity
+                        );
+
+                        $remainingToAllocate -= $allocatedQuantity;
+                    }
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Prevent Sale Without Complete FIFO Cost
+                    |--------------------------------------------------------------------------
+                    */
+
+                    if ($remainingToAllocate > 0) {
+
+                        throw ValidationException::withMessages([
+                            'items' =>
+                                "There is not enough FIFO-costed stock available for {$product->product_name}. Please record the product's existing stock as a purchase batch first.",
+                        ]);
+                    }
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Update Product Stock
+                    |--------------------------------------------------------------------------
+                    */
+
+                    $newStock =
+                        $product->stock - $quantity;
+
+                    $product->update([
+                        'stock' => $newStock,
+                        'status' => $newStock === 0
+                            ? 'Out of Stock'
+                            : 'Available',
                     ]);
-                }
 
-                $price = (float) $product->price;
-                $subtotal = round($price * $quantity, 2);
+                    /*
+|--------------------------------------------------------------------------
+| Inventory Movement Per FIFO Batch
+|--------------------------------------------------------------------------
+*/
 
-                $lineItems[] = [
-                    'product' => $product,
-                    'quantity' => $quantity,
-                    'price' => $price,
-                    'subtotal' => $subtotal,
-                ];
-
-                $totalAmount = round($totalAmount + $subtotal, 2);
-            }
-
-            do {
-                $saleNumber = 'ORD-' . now()->format('Ymd-His') . '-'
-                    . random_int(1000, 9999);
-            } while (Sale::where('sale_number', $saleNumber)->exists());
-
-            $sale = Sale::create([
-                'sale_number' => $saleNumber,
-                'user_id' => $validated['user_id'] ?? null,
-                'sale_type' => $validated['sale_type'],
-                'payment_method' => $validated['payment_method'],
-                'payment_status' => 'Paid',
-                'status' => 'Completed',
-                'total_amount' => $totalAmount,
-                'notes' => $validated['notes'] ?? null,
-            ]);
-
-            foreach ($lineItems as $lineItem) {
-    $product = $lineItem['product'];
-    $newStock = $product->stock - $lineItem['quantity'];
-
-    SaleItem::create([
-        'sale_id' => $sale->id,
-        'product_id' => $product->id,
-        'quantity' => $lineItem['quantity'],
-        'price' => $lineItem['price'],
-        'subtotal' => $lineItem['subtotal'],
-    ]);
-
-    $product->update([
-        'stock' => $newStock,
-        'status' => $newStock === 0
-            ? 'Out of Stock'
-            : 'Available',
-    ]);
+foreach ($saleItem->fifoAllocations()->get() as $allocation) {
 
     InventoryMovement::create([
         'product_id' => $product->id,
+        'purchase_item_id' => $allocation->purchase_item_id,
         'sale_id' => $sale->id,
         'movement_type' => 'Walk-in Sale',
-        'quantity' => $lineItem['quantity'],
+        'quantity' => $allocation->quantity,
         'remarks' => "Walk-in Sale {$sale->sale_number}",
     ]);
 }
-
-            return $sale;
-        });
-    } catch (ValidationException $exception) {
-        throw $exception;
-    } catch (\Throwable $exception) {
-        return redirect()
-            ->back()
-            ->withInput()
-            ->withErrors([
-                'items' => 'Unable to create the order. Please try again.',
-            ]);
-    }
-
-    return redirect()
-        ->route('orders.show', $sale)
-        ->with('success', 'Order created successfully.');
-}
-
-    /**
- * Display the specified order.
- */
-public function show(Sale $sale)
-{
-    $sale->load([
-        'user',
-        'saleItems.product',
-    ]);
-
-    return view(
-        'admin.orders.show',
-        compact('sale')
-    );
-}
-public function receipt(Sale $sale)
-{
-    $sale->load([
-        'user',
-        'saleItems.product',
-    ]);
-
-    return view(
-        'admin.orders.receipt',
-        compact('sale')
-    );
-}
-public function updateStatus(Request $request, Sale $sale)
-{
-    $validated = $request->validate([
-        'status' => 'required|in:Pending,Processing,To Deliver,Delivered,Cancelled',
-    ]);
-
-    $newStatus = $validated['status'];
-    $currentStatus = $sale->status;
-
-    /*
-    |--------------------------------------------------------------------------
-    | WALK-IN ORDERS
-    |--------------------------------------------------------------------------
-    |
-    | Walk-in sales are already completed and should not use the
-    | online delivery status flow.
-    |
-    */
-    if ($sale->sale_type === 'Walk-in') {
-        return redirect()
-            ->route('orders.show', $sale)
-            ->with('error', 'Walk-in orders are already completed and do not use the online order status flow.');
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | VALID STATUS TRANSITIONS
-    |--------------------------------------------------------------------------
-    */
-    $allowedTransitions = [
-        'Pending' => [
-            'Processing',
-            'Cancelled',
-        ],
-
-        'Processing' => [
-            'To Deliver',
-            'Cancelled',
-        ],
-
-        'To Deliver' => [
-            'Delivered',
-            'Cancelled',
-        ],
-
-        'Delivered' => [],
-
-        'Cancelled' => [],
-    ];
-
-    if (!in_array($newStatus, $allowedTransitions[$currentStatus] ?? [], true)) {
-        return redirect()
-            ->route('orders.show', $sale)
-            ->with(
-                'error',
-                "The order cannot be changed from {$currentStatus} to {$newStatus}."
-            );
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | CANCEL ORDER
-    |--------------------------------------------------------------------------
-    |
-    | Restore the deducted stock when Admin cancels an online order.
-    |
-    */
-    if ($newStatus === 'Cancelled') {
-        DB::transaction(function () use ($sale) {
-            $sale->load('saleItems');
-
-            foreach ($sale->saleItems as $saleItem) {
-                $product = Product::where('id', $saleItem->product_id)
-                    ->lockForUpdate()
-                    ->first();
-
-                if (!$product) {
-                    continue;
                 }
 
-                $newStock = $product->stock + $saleItem->quantity;
+                return $sale;
+            });
 
-                $product->update([
-                    'stock' => $newStock,
-                    'status' => $newStock > 0
-                        ? 'Available'
-                        : 'Out of Stock',
+        } catch (ValidationException $exception) {
+
+            throw $exception;
+
+        } catch (\Throwable $exception) {
+
+            return redirect()
+                ->back()
+                ->withInput()
+                ->withErrors([
+                    'items' => 'Unable to create the order. Please try again.',
                 ]);
+        }
 
-                InventoryMovement::create([
-                    'product_id' => $product->id,
-                    'sale_id' => $sale->id,
-                    'movement_type' => 'Returned',
-                    'quantity' => $saleItem->quantity,
-                    'remarks' => "Order {$sale->sale_number} cancelled by admin",
-                ]);
-            }
-
-            $sale->update([
-                'status' => 'Cancelled',
-            ]);
-        });
-    } else {
-        $sale->update([
-            'status' => $newStatus,
-        ]);
+        return redirect()
+            ->route('orders.show', $sale)
+            ->with('success', 'Order created successfully.');
     }
 
-    return redirect()
-        ->route('orders.show', $sale)
-        ->with('success', 'Order status updated successfully.');
-}
+    /**
+     * Display the specified order.
+     */
+    public function show(Sale $sale)
+    {
+        $sale->load([
+            'user',
+            'saleItems.product',
+        ]);
 
-public function verifyGcash(Sale $sale)
-{
-    $sale->update([
-        'payment_status' => 'Paid',
-        'gcash_verified_at' => now(),
-    ]);
+        return view(
+            'admin.orders.show',
+            compact('sale')
+        );
+    }
 
-    return redirect()
-        ->route('orders.show', $sale)
-        ->with('success', 'GCash payment verified successfully.');
-}
+    public function receipt(Sale $sale)
+    {
+        $sale->load([
+            'user',
+            'saleItems.product',
+        ]);
 
-public function rejectGcash(Sale $sale)
-{
-    $sale->update([
-        'payment_status' => 'Failed',
-        'gcash_verified_at' => null,
-    ]);
+        return view(
+            'admin.orders.receipt',
+            compact('sale')
+        );
+    }
 
-    return redirect()
-        ->route('orders.show', $sale)
-        ->with('success', 'GCash payment rejected.');
-}
+    public function updateStatus(Request $request, Sale $sale)
+    {
+        $validated = $request->validate([
+            'status' => 'required|in:Pending,Processing,To Deliver,Delivered,Cancelled',
+        ]);
+
+        $newStatus = $validated['status'];
+        $currentStatus = $sale->status;
+
+        /*
+        |--------------------------------------------------------------------------
+        | WALK-IN ORDERS
+        |--------------------------------------------------------------------------
+        |
+        | Walk-in sales are already completed and should not use the
+        | online delivery status flow.
+        |
+        */
+
+        if ($sale->sale_type === 'Walk-in') {
+            return redirect()
+                ->route('orders.show', $sale)
+                ->with(
+                    'error',
+                    'Walk-in orders are already completed and do not use the online order status flow.'
+                );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | VALID STATUS TRANSITIONS
+        |--------------------------------------------------------------------------
+        */
+
+        $allowedTransitions = [
+            'Pending' => [
+                'Processing',
+                'Cancelled',
+            ],
+
+            'Processing' => [
+                'To Deliver',
+                'Cancelled',
+            ],
+
+            'To Deliver' => [
+                'Delivered',
+                'Cancelled',
+            ],
+
+            'Delivered' => [],
+
+            'Cancelled' => [],
+        ];
+
+        if (!in_array($newStatus, $allowedTransitions[$currentStatus] ?? [], true)) {
+            return redirect()
+                ->route('orders.show', $sale)
+                ->with(
+                    'error',
+                    "The order cannot be changed from {$currentStatus} to {$newStatus}."
+                );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | CANCEL ORDER
+        |--------------------------------------------------------------------------
+        |
+        | Restore the deducted stock and FIFO batch when Admin
+        | cancels an online order.
+        |
+        */
+
+        if ($newStatus === 'Cancelled') {
+
+            DB::transaction(function () use ($sale) {
+
+                $sale->load([
+                    'saleItems.product',
+                    'saleItems.fifoAllocations',
+                ]);
+
+                foreach ($sale->saleItems as $saleItem) {
+
+                    $product = Product::where(
+                        'id',
+                        $saleItem->product_id
+                    )
+                        ->lockForUpdate()
+                        ->first();
+
+                    if (!$product) {
+                        continue;
+                    }
+
+                    $newStock =
+                        $product->stock + $saleItem->quantity;
+
+                    $product->update([
+                        'stock' => $newStock,
+                        'status' => $newStock > 0
+                            ? 'Available'
+                            : 'Out of Stock',
+                    ]);
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Restore FIFO Purchase Batches
+                    |--------------------------------------------------------------------------
+                    */
+
+                    $fifoAllocations = $saleItem->fifoAllocations;
+
+                    if ($fifoAllocations->isNotEmpty()) {
+
+                        foreach ($fifoAllocations as $allocation) {
+
+                            $purchaseItem = $allocation
+                                ->purchaseItem()
+                                ->lockForUpdate()
+                                ->first();
+
+                            if (!$purchaseItem) {
+                                continue;
+                            }
+
+                            $purchaseItem->increment(
+                                'remaining_quantity',
+                                $allocation->quantity
+                            );
+
+                            InventoryMovement::create([
+                                'product_id' =>
+                                    $product->id,
+                                'purchase_item_id' =>
+                                    $purchaseItem->id,
+                                'sale_id' =>
+                                    $sale->id,
+                                'movement_type' =>
+                                    'Returned',
+                                'quantity' =>
+                                    $allocation->quantity,
+                                'remarks' =>
+                                    "FIFO stock returned from cancelled order {$sale->sale_number}",
+                            ]);
+                        }
+
+                    } else {
+
+                        /*
+                        |--------------------------------------------------------------------------
+                        | Legacy Sale Fallback
+                        |--------------------------------------------------------------------------
+                        */
+
+                        InventoryMovement::create([
+                            'product_id' => $product->id,
+                            'sale_id' => $sale->id,
+                            'movement_type' => 'Returned',
+                            'quantity' => $saleItem->quantity,
+                            'remarks' =>
+                                "Stock returned from cancelled order {$sale->sale_number}",
+                        ]);
+                    }
+                }
+
+                $sale->update([
+                    'status' => 'Cancelled',
+                ]);
+            });
+
+        } else {
+
+            $sale->update([
+                'status' => $newStatus,
+            ]);
+        }
+
+        return redirect()
+            ->route('orders.show', $sale)
+            ->with('success', 'Order status updated successfully.');
+    }
+
+    public function verifyGcash(Sale $sale)
+    {
+        $sale->update([
+            'payment_status' => 'Paid',
+            'gcash_verified_at' => now(),
+        ]);
+
+        return redirect()
+            ->route('orders.show', $sale)
+            ->with('success', 'GCash payment verified successfully.');
+    }
+
+    public function rejectGcash(Sale $sale)
+    {
+        $sale->update([
+            'payment_status' => 'Failed',
+            'gcash_verified_at' => null,
+        ]);
+
+        return redirect()
+            ->route('orders.show', $sale)
+            ->with('success', 'GCash payment rejected.');
+    }
 }

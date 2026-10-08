@@ -91,28 +91,48 @@
 
 
                         {{-- =================================================
-                            CUSTOMER
-                        ================================================== --}}
-                        <div class="mb-4">
+    WALK-IN CUSTOMER DETAILS
+================================================== --}}
+<div class="mb-4">
 
-                            <label class="form-label fw-semibold">
-                                Customer
-                            </label>
+    <label class="form-label fw-semibold">
+        Customer Name
+    </label>
 
-                            <select name="user_id"
-                                    class="form-select">
+    <input
+        type="text"
+        name="customer_name"
+        class="form-control"
+        value="{{ old('customer_name') }}"
+        placeholder="Enter customer name"
+    >
 
-                                <option value="">
-                                    Walk-in Customer
-                                </option>
+    <small class="text-muted">
+        Enter the name of the walk-in customer.
+    </small>
 
-                            </select>
+</div>
 
-                            <small class="text-muted">
-                                Leave this as Walk-in Customer for customers without an account.
-                            </small>
 
-                        </div>
+<div class="mb-4">
+
+    <label class="form-label fw-semibold">
+        OR Number
+    </label>
+
+    <input
+        type="text"
+        name="or_number"
+        class="form-control"
+        value="{{ old('or_number') }}"
+        placeholder="Enter OR number"
+    >
+
+    <small class="text-muted">
+        Enter the official receipt number for this transaction.
+    </small>
+
+</div>
 
 
                         {{-- =================================================

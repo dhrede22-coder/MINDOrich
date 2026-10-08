@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class SaleItem extends Model
@@ -27,7 +28,12 @@ class SaleItem extends Model
     }
 
     public function review(): HasOne
-{
-    return $this->hasOne(ProductReview::class);
-}
+    {
+        return $this->hasOne(ProductReview::class);
+    }
+
+    public function fifoAllocations(): HasMany
+    {
+        return $this->hasMany(SaleItemFifoAllocation::class);
+    }
 }

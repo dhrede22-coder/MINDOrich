@@ -10,6 +10,7 @@ class InventoryMovement extends Model
     protected $fillable = [
         'product_id',
         'sale_id',
+        'purchase_item_id',
         'movement_type',
         'quantity',
         'remarks',
@@ -27,5 +28,10 @@ class InventoryMovement extends Model
     public function sale(): BelongsTo
     {
         return $this->belongsTo(Sale::class);
+    }
+
+    public function purchaseItem(): BelongsTo
+    {
+        return $this->belongsTo(PurchaseItem::class);
     }
 }

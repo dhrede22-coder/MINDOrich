@@ -8,23 +8,15 @@
 
     {{-- Validation Errors --}}
     @if ($errors->any())
-
         <div class="alert alert-danger rounded-4 mb-4">
-
             <strong>Please check the following:</strong>
 
             <ul class="mb-0 mt-2">
-
                 @foreach ($errors->all() as $error)
-
                     <li>{{ $error }}</li>
-
                 @endforeach
-
             </ul>
-
         </div>
-
     @endif
 
 
@@ -32,7 +24,6 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
 
         <div>
-
             <h2 class="fw-bold mb-1">
                 Add Product
             </h2>
@@ -40,14 +31,12 @@
             <p class="text-muted mb-0">
                 Add a new Mangyan handicraft product.
             </p>
-
         </div>
 
         <a href="{{ route('products.index') }}"
            class="btn btn-light border">
 
             <i class="bi bi-arrow-left me-2"></i>
-
             Back to Products
 
         </a>
@@ -76,6 +65,7 @@
                     Enter the basic information about the product.
                 </p>
 
+
                 <div class="row g-4">
 
                     {{-- Product Name --}}
@@ -90,31 +80,36 @@
                             name="product_name"
                             class="form-control"
                             placeholder="Enter product name"
-                            value="{{ old('product_name') }}">
+                            value="{{ old('product_name') }}"
+                            required
+                        >
 
                     </div>
 
 
-                    {{-- Craftsman --}}
+                    {{-- Producer --}}
                     <div class="col-md-6">
 
                         <label class="form-label fw-semibold">
-                            Craftsman
+                            Producer
                         </label>
 
                         <select
                             name="producer_id"
-                            class="form-select">
+                            class="form-select"
+                            required
+                        >
 
                             <option value="">
-                                Select Craftsman
+                                Select Producer
                             </option>
 
                             @foreach($producers as $producer)
 
                                 <option
                                     value="{{ $producer->id }}"
-                                    {{ old('producer_id') == $producer->id ? 'selected' : '' }}>
+                                    {{ old('producer_id') == $producer->id ? 'selected' : '' }}
+                                >
 
                                     {{ $producer->producer_name }}
 
@@ -136,7 +131,9 @@
 
                         <select
                             name="category_id"
-                            class="form-select">
+                            class="form-select"
+                            required
+                        >
 
                             <option value="">
                                 Select Category
@@ -146,7 +143,8 @@
 
                                 <option
                                     value="{{ $category->id }}"
-                                    {{ old('category_id') == $category->id ? 'selected' : '' }}>
+                                    {{ old('category_id') == $category->id ? 'selected' : '' }}
+                                >
 
                                     {{ $category->category_name }}
 
@@ -170,7 +168,8 @@
                             name="description"
                             rows="4"
                             class="form-control"
-                            placeholder="Describe the product...">{{ old('description') }}</textarea>
+                            placeholder="Describe the product..."
+                        >{{ old('description') }}</textarea>
 
                     </div>
 
@@ -181,26 +180,28 @@
         </div>
 
 
-        {{-- Inventory & Status --}}
+        {{-- Pricing & Inventory Settings --}}
         <div class="card border-0 shadow-sm rounded-4 mb-4">
 
             <div class="card-body p-4">
 
                 <h5 class="fw-bold mb-1">
-                    Inventory & Status
+                    Pricing & Inventory
                 </h5>
 
                 <p class="text-muted small mb-4">
-                    Set the product price, stock quantity, and availability.
+                    Set the customer selling price and minimum stock level.
+                    Actual stock is added through Purchases.
                 </p>
+
 
                 <div class="row g-4">
 
-                    {{-- Price --}}
+                    {{-- SRP --}}
                     <div class="col-md-4">
 
                         <label class="form-label fw-semibold">
-                            Price
+                            SRP
                         </label>
 
                         <div class="input-group">
@@ -216,27 +217,36 @@
                                 placeholder="0.00"
                                 min="0"
                                 step="0.01"
-                                value="{{ old('price') }}">
+                                value="{{ old('price') }}"
+                                required
+                            >
 
                         </div>
+
+                        <small class="text-muted">
+                            Suggested Retail Price / customer selling price.
+                        </small>
 
                     </div>
 
 
-                    {{-- Stock --}}
+                    {{-- Current Stock --}}
                     <div class="col-md-4">
 
                         <label class="form-label fw-semibold">
-                            Stock
+                            Current Stock
                         </label>
 
                         <input
-                            type="number"
-                            name="stock"
-                            class="form-control"
-                            placeholder="Enter stock quantity"
-                            min="0"
-                            value="{{ old('stock') }}">
+                            type="text"
+                            class="form-control bg-light"
+                            value="0"
+                            readonly
+                        >
+
+                        <small class="text-muted">
+                            Stock will be added through the Purchases page.
+                        </small>
 
                     </div>
 
@@ -254,7 +264,9 @@
                             class="form-control"
                             placeholder="Enter minimum stock"
                             min="0"
-                            value="{{ old('minimum_stock') }}">
+                            value="{{ old('minimum_stock') }}"
+                            required
+                        >
 
                         <small class="text-muted">
                             Used to identify low-stock products.
@@ -263,46 +275,29 @@
                     </div>
 
 
-                    {{-- Status --}}
+                    {{-- Initial Status --}}
                     <div class="col-md-4">
 
                         <label class="form-label fw-semibold">
-                            Status
+                            Initial Status
                         </label>
 
-                        <select
+                        <input
+                            type="text"
+                            class="form-control bg-light"
+                            value="Out of Stock"
+                            readonly
+                        >
+
+                        <small class="text-muted">
+                            The product becomes Available after stock is received.
+                        </small>
+
+                        <input
+                            type="hidden"
                             name="status"
-                            class="form-select">
-
-                            <option value="">
-                                Select Status
-                            </option>
-
-                            <option
-                                value="Available"
-                                {{ old('status') == 'Available' ? 'selected' : '' }}>
-
-                                Available
-
-                            </option>
-
-                            <option
-                                value="Out of Stock"
-                                {{ old('status') == 'Out of Stock' ? 'selected' : '' }}>
-
-                                Out of Stock
-
-                            </option>
-
-                            <option
-                                value="Archived"
-                                {{ old('status') == 'Archived' ? 'selected' : '' }}>
-
-                                Archived
-
-                            </option>
-
-                        </select>
+                            value="Out of Stock"
+                        >
 
                     </div>
 
@@ -326,6 +321,7 @@
                     Upload the main image of the product.
                 </p>
 
+
                 <div class="row">
 
                     <div class="col-md-6">
@@ -338,7 +334,8 @@
                             type="file"
                             name="featured_image"
                             class="form-control"
-                            accept="image/*">
+                            accept="image/*"
+                        >
 
                         <small class="text-muted">
                             JPG, JPEG, PNG, or WEBP.

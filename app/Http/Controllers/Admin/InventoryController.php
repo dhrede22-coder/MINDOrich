@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\InventoryMovement;
 use App\Models\Product;
+use App\Models\PurchaseItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -12,115 +13,215 @@ use Illuminate\Validation\ValidationException;
 class InventoryController extends Controller
 {
     /**
-     * Add stock to a product.
+     * Remove stock from a product using FIFO batches.
      */
-    public function addStock(Request $request, Product $product)
+    public function removeStock(Request $request, Product $product)
     {
         $validated = $request->validate([
             'quantity' => 'required|integer|min:1',
             'remarks' => 'nullable|string|max:500',
         ]);
 
-        DB::transaction(function () use ($validated, $product) {
+        DB::transaction(function () use (
+            $validated,
+            $product
+        ) {
 
-            $lockedProduct = Product::whereKey($product->id)
+            /*
+            |--------------------------------------------------------------------------
+            | LOCK PRODUCT
+            |--------------------------------------------------------------------------
+            */
+
+            $lockedProduct = Product::query()
                 ->lockForUpdate()
-                ->firstOrFail();
+                ->findOrFail($product->id);
 
-            $lockedProduct->increment(
-    'stock',
-    $validated['quantity']
-);
 
-            if ($lockedProduct->status !== 'Archived') {
+            /*
+            |--------------------------------------------------------------------------
+            | GET FIFO BATCHES
+            |--------------------------------------------------------------------------
+            |
+            | Oldest purchase batches are consumed first.
+            |
+            */
+
+            $purchaseItems = PurchaseItem::query()
+                ->where('product_id', $lockedProduct->id)
+                ->where('remaining_quantity', '>', 0)
+                ->whereHas('purchase', function ($query) {
+                    $query->where('status', 'Completed');
+                })
+                ->orderBy('received_at')
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get();
+
+
+            $fifoAvailable = $purchaseItems->sum(
+                'remaining_quantity'
+            );
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | VALIDATE FIFO STOCK
+            |--------------------------------------------------------------------------
+            */
+
+            if ((int) $validated['quantity'] > $fifoAvailable) {
+
+                throw ValidationException::withMessages([
+                    'quantity' =>
+                        'Cannot remove more stock than the available FIFO-costed stock. Please check the product purchase batches first.',
+                ]);
+            }
+
+
+            $quantityToRemove =
+                (int) $validated['quantity'];
+
+
+            $remainingToRemove =
+                $quantityToRemove;
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | CONSUME FIFO BATCHES
+            |--------------------------------------------------------------------------
+            */
+
+            foreach ($purchaseItems as $purchaseItem) {
+
+                if ($remainingToRemove <= 0) {
+                    break;
+                }
+
+
+                $availableInBatch =
+                    (int) $purchaseItem->remaining_quantity;
+
+
+                $quantityFromBatch = min(
+                    $availableInBatch,
+                    $remainingToRemove
+                );
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Reduce Purchase Batch
+                |--------------------------------------------------------------------------
+                */
+
+                $purchaseItem->decrement(
+                    'remaining_quantity',
+                    $quantityFromBatch
+                );
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Record Stock Out Movement
+                |--------------------------------------------------------------------------
+                */
+
+                InventoryMovement::create([
+                    'product_id' =>
+                        $lockedProduct->id,
+
+                    'purchase_item_id' =>
+                        $purchaseItem->id,
+
+                    'movement_type' =>
+                        'Stock Out',
+
+                    'quantity' =>
+                        $quantityFromBatch,
+
+                    'remarks' =>
+                        $validated['remarks']
+                        ?? 'Manual FIFO stock removal',
+                ]);
+
+
+                $remainingToRemove -=
+                    $quantityFromBatch;
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Update Product Stock
+            |--------------------------------------------------------------------------
+            */
+
+            $lockedProduct->decrement(
+                'stock',
+                $quantityToRemove
+            );
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Update Product Status
+            |--------------------------------------------------------------------------
+            */
+
+            $lockedProduct->refresh();
+
+            if (
+                $lockedProduct->stock <= 0
+                &&
+                $lockedProduct->status !== 'Archived'
+            ) {
+
+                $lockedProduct->update([
+                    'status' => 'Out of Stock',
+                ]);
+
+            } elseif (
+                $lockedProduct->stock > 0
+                &&
+                $lockedProduct->status !== 'Archived'
+            ) {
 
                 $lockedProduct->update([
                     'status' => 'Available',
                 ]);
-
             }
-
-            InventoryMovement::create([
-                'product_id' => $lockedProduct->id,
-                'movement_type' => 'Stock In',
-                'quantity' => $validated['quantity'],
-                'remarks' => $validated['remarks'] ?? null,
-            ]);
         });
+
 
         return redirect()
             ->back()
-            ->with('success', 'Stock added successfully.');
+            ->with(
+                'success',
+                'Stock removed successfully using FIFO batches.'
+            );
     }
+
+
     /**
- * Remove stock from a product.
- */
-public function removeStock(Request $request, Product $product)
-{
-    $validated = $request->validate([
-        'quantity' => 'required|integer|min:1',
-        'remarks' => 'nullable|string|max:500',
-    ]);
+     * Display inventory history for a product.
+     */
+    public function history(Product $product)
+    {
+        $movements = $product->inventoryMovements()
+            ->with([
+                'purchaseItem.purchase',
+            ])
+            ->latest()
+            ->get();
 
-    DB::transaction(function () use ($validated, $product) {
-
-        $lockedProduct = Product::whereKey($product->id)
-            ->lockForUpdate()
-            ->firstOrFail();
-
-        if ($validated['quantity'] > $lockedProduct->stock) {
-
-            throw ValidationException::withMessages([
-                'quantity' => 'Cannot remove more stock than the current stock.'
-            ]);
-
-        }
-
-        $newStock = $lockedProduct->stock - $validated['quantity'];
-
-        $lockedProduct->decrement(
-    'stock',
-    $validated['quantity']
-);
-
-if ($newStock == 0) {
-
-    $lockedProduct->update([
-        'status' => 'Out of Stock',
-    ]);
-
-} else {
-
-    $lockedProduct->update([
-        'status' => 'Available',
-    ]);
-
-}
-
-        InventoryMovement::create([
-            'product_id' => $lockedProduct->id,
-            'movement_type' => 'Stock Out',
-            'quantity' => $validated['quantity'],
-            'remarks' => $validated['remarks'] ?? null,
-        ]);
-    });
-
-    return redirect()
-        ->back()
-        ->with('success', 'Stock removed successfully.');
-}
-    /**
- * Display inventory history for a product.
- */
-public function history(Product $product)
-{
-    $movements = $product->inventoryMovements()
-        ->latest()
-        ->get();
-
-    return view(
-        'admin.products.inventory-history',
-        compact('product', 'movements')
-    );
-}
+        return view(
+            'admin.products.inventory-history',
+            compact(
+                'product',
+                'movements'
+            )
+        );
+    }
 }

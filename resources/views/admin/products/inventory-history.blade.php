@@ -117,6 +117,8 @@
 
                                 <th>Quantity</th>
 
+                                <th>Purchase Batch</th>
+
                                 <th>Remarks</th>
 
                             </tr>
@@ -129,6 +131,7 @@
 
                                 <tr>
 
+                                    {{-- Date --}}
                                     <td>
 
                                         <div class="fw-semibold">
@@ -146,6 +149,7 @@
                                     </td>
 
 
+                                    {{-- Movement Type --}}
                                     <td>
 
                                         @if($movement->movement_type === 'Stock In')
@@ -155,6 +159,26 @@
                                                 <i class="bi bi-arrow-down-circle me-1"></i>
 
                                                 Stock In
+
+                                            </span>
+
+                                        @elseif($movement->movement_type === 'Stock Out')
+
+                                            <span class="badge bg-secondary">
+
+                                                <i class="bi bi-arrow-up-circle me-1"></i>
+
+                                                Stock Out
+
+                                            </span>
+
+                                        @elseif($movement->movement_type === 'Returned')
+
+                                            <span class="badge bg-warning text-dark">
+
+                                                <i class="bi bi-arrow-return-left me-1"></i>
+
+                                                Returned
 
                                             </span>
 
@@ -171,9 +195,18 @@
                                     </td>
 
 
+                                    {{-- Quantity --}}
                                     <td>
 
                                         @if($movement->movement_type === 'Stock In')
+
+                                            <span class="text-success fw-bold">
+
+                                                +{{ $movement->quantity }}
+
+                                            </span>
+
+                                        @elseif($movement->movement_type === 'Returned')
 
                                             <span class="text-success fw-bold">
 
@@ -194,6 +227,35 @@
                                     </td>
 
 
+                                    {{-- Purchase Batch --}}
+                                    <td>
+
+                                        @if($movement->purchaseItem && $movement->purchaseItem->purchase)
+
+                                            <div class="fw-semibold">
+
+                                                {{ $movement->purchaseItem->purchase->purchase_number }}
+
+                                            </div>
+
+                                            <small class="text-muted">
+
+                                                Batch #{{ $movement->purchase_item_id }}
+
+                                            </small>
+
+                                        @else
+
+                                            <span class="text-muted">
+                                                —
+                                            </span>
+
+                                        @endif
+
+                                    </td>
+
+
+                                    {{-- Remarks --}}
                                     <td>
 
                                         {{ $movement->remarks ?? '—' }}

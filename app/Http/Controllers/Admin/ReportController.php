@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Sale;
 use App\Models\Product;
+use App\Models\Expense;
+use App\Models\HistoricalSale;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -85,15 +87,27 @@ class ReportController extends Controller
         */
 
         $sales = Sale::with([
-            'user',
-            'saleItems.product.producer.tribe',
-        ])
+    'user',
+    'saleItems.product.producer.tribe',
+    'saleItems.fifoAllocations.purchaseItem',
+])
         ->whereBetween('created_at', [
             $from,
             $to
         ])
         ->latest()
         ->get();
+
+        $historicalSales = HistoricalSale::with([
+    'items.product.producer.tribe',
+    'items.fifoAllocations',
+])
+->whereBetween('sales_date', [
+    $from->toDateString(),
+    $to->toDateString()
+])
+->latest('sales_date')
+->get();
 
 
         /*
@@ -102,31 +116,86 @@ class ReportController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        $totalSales = $sales->sum(
-            fn ($sale) => (float) $sale->total_amount
-        );
+        $completedSales = $sales->where('status', 'Completed');
 
-        $totalOrders = $sales->count();
 
-        $onlineSales = $sales
-            ->where('sale_type', 'Online')
-            ->sum(
-                fn ($sale) => (float) $sale->total_amount
-            );
+/*
+|--------------------------------------------------------------------------
+| HISTORICAL SALES OVERVIEW
+|--------------------------------------------------------------------------
+*/
 
-        $walkInSales = $sales
-            ->where('sale_type', 'Walk-in')
-            ->sum(
-                fn ($sale) => (float) $sale->total_amount
-            );
+$historicalSalesRevenue = $historicalSales->sum(
+    fn ($sale) => (float) $sale->total_amount
+);
 
-        $completedOrders = $sales
-            ->where('status', 'Completed')
-            ->count();
+$historicalOrders = $historicalSales->count();
 
-        $pendingOrders = $sales
-            ->where('status', 'Pending')
-            ->count();
+$historicalOnlineSales = $historicalSales
+    ->where('sale_type', 'Online')
+    ->sum(
+        fn ($sale) => (float) $sale->total_amount
+    );
+
+$historicalWalkInSales = $historicalSales
+    ->where('sale_type', 'Walk-in')
+    ->sum(
+        fn ($sale) => (float) $sale->total_amount
+    );
+
+
+/*
+|--------------------------------------------------------------------------
+| CURRENT SALES OVERVIEW
+|--------------------------------------------------------------------------
+*/
+
+$currentSalesRevenue = $completedSales->sum(
+    fn ($sale) => (float) $sale->total_amount
+);
+
+$currentOrders = $completedSales->count();
+
+$currentOnlineSales = $completedSales
+    ->where('sale_type', 'Online')
+    ->sum(
+        fn ($sale) => (float) $sale->total_amount
+    );
+
+$currentWalkInSales = $completedSales
+    ->where('sale_type', 'Walk-in')
+    ->sum(
+        fn ($sale) => (float) $sale->total_amount
+    );
+
+
+/*
+|--------------------------------------------------------------------------
+| COMBINED SALES OVERVIEW
+|--------------------------------------------------------------------------
+*/
+
+$totalSales =
+    $currentSalesRevenue +
+    $historicalSalesRevenue;
+
+$totalOrders =
+    $currentOrders +
+    $historicalOrders;
+
+$onlineSales =
+    $currentOnlineSales +
+    $historicalOnlineSales;
+
+$walkInSales =
+    $currentWalkInSales +
+    $historicalWalkInSales;
+
+$completedOrders = $totalOrders;
+
+$pendingOrders = $sales
+    ->where('status', 'Pending')
+    ->count();
 
 
         /*
@@ -135,17 +204,17 @@ class ReportController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        $cashSales = $sales
-            ->where('payment_method', 'Cash')
-            ->sum(
-                fn ($sale) => (float) $sale->total_amount
-            );
+        $cashSales = $completedSales
+    ->where('payment_method', 'Cash')
+    ->sum(
+        fn ($sale) => (float) $sale->total_amount
+    );
 
-        $codSales = $sales
-            ->where('payment_method', 'COD')
-            ->sum(
-                fn ($sale) => (float) $sale->total_amount
-            );
+$codSales = $completedSales
+    ->where('payment_method', 'COD')
+    ->sum(
+        fn ($sale) => (float) $sale->total_amount
+    );
 
 
         /*
@@ -154,7 +223,7 @@ class ReportController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        $salesTrend = $sales
+        $salesTrend = $completedSales
             ->groupBy(
                 fn ($sale) =>
                     Carbon::parse($sale->created_at)
@@ -188,7 +257,7 @@ class ReportController extends Controller
 
         $productData = [];
 
-        foreach ($sales as $sale) {
+        foreach ($completedSales as $sale) {
 
             foreach ($sale->saleItems as $saleItem) {
 
@@ -244,7 +313,7 @@ class ReportController extends Controller
 
         $craftsmanData = [];
 
-        foreach ($sales as $sale) {
+        foreach ($completedSales as $sale) {
 
             foreach ($sale->saleItems as $saleItem) {
 
@@ -306,7 +375,7 @@ class ReportController extends Controller
 
         $tribeData = [];
 
-        foreach ($sales as $sale) {
+        foreach ($completedSales as $sale) {
 
             foreach ($sale->saleItems as $saleItem) {
 
@@ -379,7 +448,7 @@ class ReportController extends Controller
 
         $customerData = [];
 
-        foreach ($sales as $sale) {
+        foreach ($completedSales as $sale) {
 
             if (!$sale->user) {
                 continue;
@@ -447,7 +516,124 @@ class ReportController extends Controller
             0
         )
         ->count();
+$fifoCogs = 0;
 
+$fifoSalesRevenue = 0;
+
+$fifoGrossProfit = 0;
+
+$totalPurchaseCost = 0;
+
+$totalGoodUnits = 0;
+
+$totalRejectUnits = 0;
+
+$currentInventoryCost = 0;
+
+foreach ($completedSales as $sale) {
+
+    foreach ($sale->saleItems as $saleItem) {
+
+        $allocations = $saleItem->fifoAllocations;
+
+        if ($allocations->isEmpty()) {
+            continue;
+        }
+
+        $allocatedQuantity = $allocations->sum(
+            fn ($allocation) => (int) $allocation->quantity
+        );
+
+        if ($allocatedQuantity < $saleItem->quantity) {
+            continue;
+        }
+
+        $fifoCogs += $allocations->sum(
+            fn ($allocation) => (float) $allocation->cost_subtotal
+        );
+
+        $fifoSalesRevenue += (float) $saleItem->subtotal;
+    }
+}
+
+$historicalFifoCogs = 0;
+
+foreach ($historicalSales as $historicalSale) {
+
+    foreach ($historicalSale->items as $saleItem) {
+
+        $historicalFifoCogs +=
+            $saleItem->fifoAllocations->sum(
+                fn ($allocation) =>
+                    (float) $allocation->cost_subtotal
+            );
+    }
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| COMBINED FIFO
+|--------------------------------------------------------------------------
+*/
+
+$fifoSalesRevenue += $historicalSalesRevenue;
+
+$fifoCogs += $historicalFifoCogs;
+
+$fifoGrossProfit =
+    $fifoSalesRevenue -
+    $fifoCogs;
+
+$purchaseItems = \App\Models\PurchaseItem::with('purchase')
+    ->whereHas('purchase', function ($query) use ($from, $to) {
+        $query->whereBetween('purchase_date', [
+            $from->toDateString(),
+            $to->toDateString()
+        ]);
+    })
+    ->get();
+
+$totalPurchaseCost = $purchaseItems->sum(
+    fn ($item) => (float) $item->quantity_in * (float) $item->purchase_price
+);
+
+$totalGoodUnits = $purchaseItems->sum(
+    fn ($item) => (int) $item->good_quantity
+);
+
+$totalRejectUnits = $purchaseItems->sum(
+    fn ($item) => (int) $item->reject_quantity
+);
+
+$remainingPurchaseItems = \App\Models\PurchaseItem::where(
+    'remaining_quantity',
+    '>',
+    0
+)->get();
+
+$currentInventoryCost = $remainingPurchaseItems->sum(
+    fn ($item) =>
+        (float) $item->remaining_quantity *
+        (float) $item->purchase_price
+);
+
+/*
+|--------------------------------------------------------------------------
+| OPERATING EXPENSES & NET PROFIT
+|--------------------------------------------------------------------------
+| Cost of Goods Sold is excluded because FIFO COGS
+| is already calculated above. This prevents double-counting.
+*/
+
+$operatingExpenses = Expense::whereBetween('expense_date', [
+    $from->toDateString(),
+    $to->toDateString()
+])
+->where('category', '!=', 'Cost of Goods Sold')
+->sum('amount');
+
+$netProfit = $fifoGrossProfit - (float) $operatingExpenses;
 
         /*
         |--------------------------------------------------------------------------
@@ -482,11 +668,24 @@ class ReportController extends Controller
                 'topCustomers',
 
                 'totalProducts',
-                'availableProducts',
-                'lowStockProducts',
-                'outOfStockProducts',
+'availableProducts',
+'lowStockProducts',
+'outOfStockProducts',
 
-                'sales'
+'fifoCogs',
+'fifoSalesRevenue',
+'fifoGrossProfit',
+'operatingExpenses',
+'netProfit',
+'totalPurchaseCost',
+'totalGoodUnits',
+'totalRejectUnits',
+'currentInventoryCost',
+
+'sales',
+'historicalSales',
+'historicalSalesRevenue',
+'historicalFifoCogs',
             )
         );
     }
@@ -502,36 +701,215 @@ class ReportController extends Controller
         $sales = Sale::with([
             'user',
             'saleItems.product.producer.tribe',
+            'saleItems.fifoAllocations.purchaseItem',
         ])
         ->whereBetween('created_at', [$from, $to])
         ->latest()
         ->get();
 
-        $totalSales = $sales->sum(function ($sale) {
-            return (float) $sale->total_amount;
-        });
+        $historicalSales = HistoricalSale::with([
+    'items.fifoAllocations',
+])
+->whereBetween('sales_date', [
+    $from->toDateString(),
+    $to->toDateString()
+])
+->latest('sales_date')
+->get();
 
-        $totalOrders = $sales->count();
+        $completedSales = $sales->where('status', 'Completed');
 
-        $onlineSales = $sales
-            ->where('sale_type', 'Online')
-            ->sum(function ($sale) {
-                return (float) $sale->total_amount;
-            });
 
-        $walkInSales = $sales
-            ->where('sale_type', 'Walk-in')
-            ->sum(function ($sale) {
-                return (float) $sale->total_amount;
-            });
+/*
+|--------------------------------------------------------------------------
+| HISTORICAL SALES
+|--------------------------------------------------------------------------
+*/
 
-        $completedOrders = $sales
-            ->where('status', 'Completed')
-            ->count();
+$historicalSalesRevenue = $historicalSales->sum(
+    fn ($sale) => (float) $sale->total_amount
+);
 
-        $pendingOrders = $sales
-            ->where('status', 'Pending')
-            ->count();
+$historicalOrders = $historicalSales->count();
+
+$historicalOnlineSales = $historicalSales
+    ->where('sale_type', 'Online')
+    ->sum(
+        fn ($sale) => (float) $sale->total_amount
+    );
+
+$historicalWalkInSales = $historicalSales
+    ->where('sale_type', 'Walk-in')
+    ->sum(
+        fn ($sale) => (float) $sale->total_amount
+    );
+
+
+/*
+|--------------------------------------------------------------------------
+| CURRENT + HISTORICAL SALES
+|--------------------------------------------------------------------------
+*/
+
+$currentSalesRevenue = $completedSales->sum(
+    fn ($sale) => (float) $sale->total_amount
+);
+
+$currentOrders = $completedSales->count();
+
+$currentOnlineSales = $completedSales
+    ->where('sale_type', 'Online')
+    ->sum(
+        fn ($sale) => (float) $sale->total_amount
+    );
+
+$currentWalkInSales = $completedSales
+    ->where('sale_type', 'Walk-in')
+    ->sum(
+        fn ($sale) => (float) $sale->total_amount
+    );
+
+
+$totalSales =
+    $currentSalesRevenue +
+    $historicalSalesRevenue;
+
+$totalOrders =
+    $currentOrders +
+    $historicalOrders;
+
+$onlineSales =
+    $currentOnlineSales +
+    $historicalOnlineSales;
+
+$walkInSales =
+    $currentWalkInSales +
+    $historicalWalkInSales;
+
+$completedOrders =
+    $totalOrders;
+
+$pendingOrders = $sales
+    ->where('status', 'Pending')
+    ->count();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | FIFO & INVENTORY SUMMARY FOR PDF
+        |--------------------------------------------------------------------------
+        */
+
+        $fifoCogs = 0;
+
+        $fifoSalesRevenue = 0;
+
+        foreach ($completedSales as $sale) {
+
+            foreach ($sale->saleItems as $saleItem) {
+
+                $allocations = $saleItem->fifoAllocations;
+
+                if ($allocations->isEmpty()) {
+                    continue;
+                }
+
+                $allocatedQuantity = $allocations->sum(
+                    fn ($allocation) => (int) $allocation->quantity
+                );
+
+                if ($allocatedQuantity < $saleItem->quantity) {
+                    continue;
+                }
+
+                $fifoCogs += $allocations->sum(
+                    fn ($allocation) => (float) $allocation->cost_subtotal
+                );
+
+                $fifoSalesRevenue += (float) $saleItem->subtotal;
+            }
+        }
+
+        $historicalFifoCogs = 0;
+
+foreach ($historicalSales as $historicalSale) {
+
+    foreach ($historicalSale->items as $saleItem) {
+
+        $historicalFifoCogs +=
+            $saleItem->fifoAllocations->sum(
+                fn ($allocation) =>
+                    (float) $allocation->cost_subtotal
+            );
+    }
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| COMBINED FIFO
+|--------------------------------------------------------------------------
+*/
+
+$fifoSalesRevenue += $historicalSalesRevenue;
+
+$fifoCogs += $historicalFifoCogs;
+
+$fifoGrossProfit =
+    $fifoSalesRevenue -
+    $fifoCogs;
+
+        $purchaseItems = \App\Models\PurchaseItem::with('purchase')
+            ->whereHas('purchase', function ($query) use ($from, $to) {
+                $query->whereBetween('purchase_date', [
+                    $from->toDateString(),
+                    $to->toDateString()
+                ]);
+            })
+            ->get();
+
+        $totalPurchaseCost = $purchaseItems->sum(
+            fn ($item) =>
+                (float) $item->quantity_in *
+                (float) $item->purchase_price
+        );
+
+        $totalGoodUnits = $purchaseItems->sum(
+            fn ($item) => (int) $item->good_quantity
+        );
+
+        $totalRejectUnits = $purchaseItems->sum(
+            fn ($item) => (int) $item->reject_quantity
+        );
+
+        $remainingPurchaseItems = \App\Models\PurchaseItem::where(
+            'remaining_quantity',
+            '>',
+            0
+        )->get();
+
+        $currentInventoryCost = $remainingPurchaseItems->sum(
+            fn ($item) =>
+                (float) $item->remaining_quantity *
+                (float) $item->purchase_price
+        );
+
+        /*
+|--------------------------------------------------------------------------
+| OPERATING EXPENSES & NET PROFIT FOR PDF
+|--------------------------------------------------------------------------
+| Cost of Goods Sold is excluded because FIFO COGS
+| is already calculated above. This prevents double-counting.
+*/
+
+$operatingExpenses = Expense::whereBetween('expense_date', [
+    $from->toDateString(),
+    $to->toDateString()
+])
+->where('category', '!=', 'Cost of Goods Sold')
+->sum('amount');
+
+$netProfit = $fifoGrossProfit - (float) $operatingExpenses;
 
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView(
             'admin.reports.pdf',
@@ -545,7 +923,19 @@ class ReportController extends Controller
                 'onlineSales',
                 'walkInSales',
                 'completedOrders',
-                'pendingOrders'
+                'pendingOrders',
+                'fifoCogs',
+                'fifoSalesRevenue',
+                'fifoGrossProfit',
+                'operatingExpenses',
+                'netProfit',
+                'totalPurchaseCost',
+                'totalGoodUnits',
+                'totalRejectUnits',
+                'currentInventoryCost',
+'historicalSales',
+'historicalSalesRevenue',
+'historicalFifoCogs'
             )
         );
 
@@ -567,36 +957,215 @@ class ReportController extends Controller
         $sales = Sale::with([
             'user',
             'saleItems.product.producer.tribe',
+            'saleItems.fifoAllocations.purchaseItem',
         ])
         ->whereBetween('created_at', [$from, $to])
         ->latest()
         ->get();
 
-        $totalSales = $sales->sum(function ($sale) {
-            return (float) $sale->total_amount;
-        });
+        $historicalSales = HistoricalSale::with([
+    'items.fifoAllocations',
+])
+->whereBetween('sales_date', [
+    $from->toDateString(),
+    $to->toDateString()
+])
+->latest('sales_date')
+->get();
 
-        $totalOrders = $sales->count();
+        $completedSales = $sales->where('status', 'Completed');
 
-        $onlineSales = $sales
-            ->where('sale_type', 'Online')
-            ->sum(function ($sale) {
-                return (float) $sale->total_amount;
-            });
 
-        $walkInSales = $sales
-            ->where('sale_type', 'Walk-in')
-            ->sum(function ($sale) {
-                return (float) $sale->total_amount;
-            });
+/*
+|--------------------------------------------------------------------------
+| HISTORICAL SALES
+|--------------------------------------------------------------------------
+*/
 
-        $completedOrders = $sales
-            ->where('status', 'Completed')
-            ->count();
+$historicalSalesRevenue = $historicalSales->sum(
+    fn ($sale) => (float) $sale->total_amount
+);
 
-        $pendingOrders = $sales
-            ->where('status', 'Pending')
-            ->count();
+$historicalOrders = $historicalSales->count();
+
+$historicalOnlineSales = $historicalSales
+    ->where('sale_type', 'Online')
+    ->sum(
+        fn ($sale) => (float) $sale->total_amount
+    );
+
+$historicalWalkInSales = $historicalSales
+    ->where('sale_type', 'Walk-in')
+    ->sum(
+        fn ($sale) => (float) $sale->total_amount
+    );
+
+
+/*
+|--------------------------------------------------------------------------
+| COMBINED SALES
+|--------------------------------------------------------------------------
+*/
+
+$currentSalesRevenue = $completedSales->sum(
+    fn ($sale) => (float) $sale->total_amount
+);
+
+$currentOrders = $completedSales->count();
+
+$currentOnlineSales = $completedSales
+    ->where('sale_type', 'Online')
+    ->sum(
+        fn ($sale) => (float) $sale->total_amount
+    );
+
+$currentWalkInSales = $completedSales
+    ->where('sale_type', 'Walk-in')
+    ->sum(
+        fn ($sale) => (float) $sale->total_amount
+    );
+
+
+$totalSales =
+    $currentSalesRevenue +
+    $historicalSalesRevenue;
+
+$totalOrders =
+    $currentOrders +
+    $historicalOrders;
+
+$onlineSales =
+    $currentOnlineSales +
+    $historicalOnlineSales;
+
+$walkInSales =
+    $currentWalkInSales +
+    $historicalWalkInSales;
+
+$completedOrders =
+    $totalOrders;
+
+$pendingOrders = $sales
+    ->where('status', 'Pending')
+    ->count();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | FIFO & INVENTORY SUMMARY FOR EXCEL
+        |--------------------------------------------------------------------------
+        */
+
+        $fifoCogs = 0;
+
+        $fifoSalesRevenue = 0;
+
+        foreach ($completedSales as $sale) {
+
+            foreach ($sale->saleItems as $saleItem) {
+
+                $allocations = $saleItem->fifoAllocations;
+
+                if ($allocations->isEmpty()) {
+                    continue;
+                }
+
+                $allocatedQuantity = $allocations->sum(
+                    fn ($allocation) => (int) $allocation->quantity
+                );
+
+                if ($allocatedQuantity < $saleItem->quantity) {
+                    continue;
+                }
+
+                $fifoCogs += $allocations->sum(
+                    fn ($allocation) => (float) $allocation->cost_subtotal
+                );
+
+                $fifoSalesRevenue += (float) $saleItem->subtotal;
+            }
+        }
+
+       $historicalFifoCogs = 0;
+
+foreach ($historicalSales as $historicalSale) {
+
+    foreach ($historicalSale->items as $saleItem) {
+
+        $historicalFifoCogs +=
+            $saleItem->fifoAllocations->sum(
+                fn ($allocation) =>
+                    (float) $allocation->cost_subtotal
+            );
+    }
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| COMBINED FIFO
+|--------------------------------------------------------------------------
+*/
+
+$fifoSalesRevenue += $historicalSalesRevenue;
+
+$fifoCogs += $historicalFifoCogs;
+
+$fifoGrossProfit =
+    $fifoSalesRevenue -
+    $fifoCogs;
+
+        $purchaseItems = \App\Models\PurchaseItem::with('purchase')
+            ->whereHas('purchase', function ($query) use ($from, $to) {
+                $query->whereBetween('purchase_date', [
+                    $from->toDateString(),
+                    $to->toDateString()
+                ]);
+            })
+            ->get();
+
+        $totalPurchaseCost = $purchaseItems->sum(
+            fn ($item) =>
+                (float) $item->quantity_in *
+                (float) $item->purchase_price
+        );
+
+        $totalGoodUnits = $purchaseItems->sum(
+            fn ($item) => (int) $item->good_quantity
+        );
+
+        $totalRejectUnits = $purchaseItems->sum(
+            fn ($item) => (int) $item->reject_quantity
+        );
+
+        $remainingPurchaseItems = \App\Models\PurchaseItem::where(
+            'remaining_quantity',
+            '>',
+            0
+        )->get();
+
+        $currentInventoryCost = $remainingPurchaseItems->sum(
+            fn ($item) =>
+                (float) $item->remaining_quantity *
+                (float) $item->purchase_price
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | OPERATING EXPENSES & NET PROFIT FOR EXCEL
+        |--------------------------------------------------------------------------
+        | Cost of Goods Sold is excluded because FIFO COGS
+        | is already calculated above. This prevents double-counting.
+        */
+
+        $operatingExpenses = Expense::whereBetween('expense_date', [
+            $from->toDateString(),
+            $to->toDateString()
+        ])
+        ->where('category', '!=', 'Cost of Goods Sold')
+        ->sum('amount');
+
+        $netProfit = $fifoGrossProfit - (float) $operatingExpenses;
 
         $html = view(
             'admin.reports.excel',
@@ -610,7 +1179,19 @@ class ReportController extends Controller
                 'onlineSales',
                 'walkInSales',
                 'completedOrders',
-                'pendingOrders'
+                'pendingOrders',
+                'fifoCogs',
+                'fifoSalesRevenue',
+                'fifoGrossProfit',
+                'operatingExpenses',
+                'netProfit',
+                'totalPurchaseCost',
+                'totalGoodUnits',
+                'totalRejectUnits',
+                'currentInventoryCost',
+'historicalSales',
+'historicalSalesRevenue',
+'historicalFifoCogs'
             )
         )->render();
 

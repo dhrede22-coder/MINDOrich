@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Customer;
 use App\Http\Controllers\Controller;
 use App\Models\InventoryMovement;
 use App\Models\Product;
+use App\Models\PurchaseItem;
 use App\Models\Sale;
-use App\Models\Setting;
 use App\Models\SaleItem;
+use App\Models\SaleItemFifoAllocation;
+use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -23,20 +25,22 @@ class CheckoutController extends Controller
     public function index(Request $request)
     {
         // ======================================================
-// CUSTOMER VERIFICATION CHECK
-// Only verified customers can proceed to checkout.
-// ======================================================
-$gcashQrCode = Setting::where('key', 'gcash_qr_code')->value('value');
-$user = auth()->user();
+        // CUSTOMER VERIFICATION CHECK
+        // Only verified customers can proceed to checkout.
+        // ======================================================
 
-if ($user->verification_status !== 'Approved') {
-    return redirect()
-        ->route('customer.verification.create')
-        ->with(
-            'error',
-            'Please complete your account verification before placing an order.'
-        );
-}
+        $gcashQrCode = Setting::where('key', 'gcash_qr_code')->value('value');
+        $user = auth()->user();
+
+        if ($user->verification_status !== 'Approved') {
+            return redirect()
+                ->route('customer.verification.create')
+                ->with(
+                    'error',
+                    'Please complete your account verification before placing an order.'
+                );
+        }
+
         /*
         |--------------------------------------------------------------------------
         | BUY NOW
@@ -64,7 +68,6 @@ if ($user->verification_status !== 'Approved') {
                 'gcashQrCode' => $gcashQrCode,
             ]);
         }
-
 
         /*
         |--------------------------------------------------------------------------
@@ -143,7 +146,6 @@ if ($user->verification_status !== 'Approved') {
             ]);
         }
 
-
         /*
         |--------------------------------------------------------------------------
         | EXISTING SELECTED CHECKOUT SESSION
@@ -175,7 +177,6 @@ if ($user->verification_status !== 'Approved') {
                 'gcashQrCode' => $gcashQrCode,
             ]);
         }
-
 
         /*
         |--------------------------------------------------------------------------
@@ -218,7 +219,6 @@ if ($user->verification_status !== 'Approved') {
         ]);
     }
 
-
     /*
     |--------------------------------------------------------------------------
     | BUY NOW
@@ -232,7 +232,6 @@ if ($user->verification_status !== 'Approved') {
         ]);
 
         $quantity = (int) $validated['quantity'];
-
 
         /*
         |--------------------------------------------------------------------------
@@ -250,7 +249,6 @@ if ($user->verification_status !== 'Approved') {
                 );
         }
 
-
         /*
         |--------------------------------------------------------------------------
         | Check Stock
@@ -267,7 +265,6 @@ if ($user->verification_status !== 'Approved') {
                 );
         }
 
-
         /*
         |--------------------------------------------------------------------------
         | Clear Previous Checkout Sessions
@@ -275,7 +272,6 @@ if ($user->verification_status !== 'Approved') {
         */
 
         session()->forget('checkout_selected');
-
 
         /*
         |--------------------------------------------------------------------------
@@ -295,7 +291,6 @@ if ($user->verification_status !== 'Approved') {
 
         session()->put('buy_now', $buyNow);
 
-
         /*
         |--------------------------------------------------------------------------
         | Go Directly To Checkout
@@ -306,7 +301,6 @@ if ($user->verification_status !== 'Approved') {
             ->route('customer.checkout');
     }
 
-
     /*
     |--------------------------------------------------------------------------
     | PLACE ORDER
@@ -315,28 +309,28 @@ if ($user->verification_status !== 'Approved') {
 
     public function placeOrder(Request $request)
     {
-            // ======================================================
-    // CUSTOMER VERIFICATION CHECK
-    // Prevent unverified customers from placing orders.
-    // ======================================================
+        // ======================================================
+        // CUSTOMER VERIFICATION CHECK
+        // Prevent unverified customers from placing orders.
+        // ======================================================
 
-    $user = auth()->user();
+        $user = auth()->user();
 
-    if ($user->verification_status !== 'Approved') {
-        return redirect()
-            ->route('customer.verification.create')
-            ->with(
-                'error',
-                'Your account must be verified before you can place an order.'
-            );
-    }
-       $validated = $request->validate([
-    'payment_method' => 'required|in:COD,GCash',
-    'gcash_reference' => 'required_if:payment_method,GCash|nullable|string|max:100',
-    'gcash_proof' => 'required_if:payment_method,GCash|nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
-    'notes' => 'nullable|string|max:1000',
-]);
+        if ($user->verification_status !== 'Approved') {
+            return redirect()
+                ->route('customer.verification.create')
+                ->with(
+                    'error',
+                    'Your account must be verified before you can place an order.'
+                );
+        }
 
+        $validated = $request->validate([
+            'payment_method' => 'required|in:COD,GCash',
+            'gcash_reference' => 'required_if:payment_method,GCash|nullable|string|max:100',
+            'gcash_proof' => 'required_if:payment_method,GCash|nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'notes' => 'nullable|string|max:1000',
+        ]);
 
         /*
         |--------------------------------------------------------------------------
@@ -346,7 +340,6 @@ if ($user->verification_status !== 'Approved') {
 
         $isBuyNow = session()->has('buy_now');
         $isSelectedCheckout = session()->has('checkout_selected');
-
 
         if ($isBuyNow) {
 
@@ -360,7 +353,6 @@ if ($user->verification_status !== 'Approved') {
 
             $cart = session()->get('cart', []);
         }
-
 
         /*
         |--------------------------------------------------------------------------
@@ -378,24 +370,24 @@ if ($user->verification_status !== 'Approved') {
                 );
         }
 
-$gcashProofPath = null;
+        $gcashProofPath = null;
 
-if ($request->hasFile('gcash_proof')) {
-    $gcashProofPath = $request->file('gcash_proof')->store(
-        'payment_proofs',
-        'public'
-    );
-}
+        if ($request->hasFile('gcash_proof')) {
+            $gcashProofPath = $request->file('gcash_proof')->store(
+                'payment_proofs',
+                'public'
+            );
+        }
+
         try {
 
             $sale = DB::transaction(function () use (
-    $cart,
-    $validated,
-    $gcashProofPath
-) {
+                $cart,
+                $validated,
+                $gcashProofPath
+            ) {
 
                 $productIds = array_keys($cart);
-
 
                 /*
                 |--------------------------------------------------------------------------
@@ -408,7 +400,6 @@ if ($request->hasFile('gcash_proof')) {
                     ->get()
                     ->keyBy('id');
 
-
                 if ($products->count() !== count($productIds)) {
 
                     throw ValidationException::withMessages([
@@ -417,10 +408,8 @@ if ($request->hasFile('gcash_proof')) {
                     ]);
                 }
 
-
                 $totalAmount = 0;
                 $lineItems = [];
-
 
                 /*
                 |--------------------------------------------------------------------------
@@ -434,7 +423,6 @@ if ($request->hasFile('gcash_proof')) {
 
                     $quantity = (int) $item['quantity'];
 
-
                     if (!$product) {
 
                         throw ValidationException::withMessages([
@@ -442,7 +430,6 @@ if ($request->hasFile('gcash_proof')) {
                                 'A product in your cart could not be found.',
                         ]);
                     }
-
 
                     if ($product->status !== 'Available') {
 
@@ -452,7 +439,6 @@ if ($request->hasFile('gcash_proof')) {
                         ]);
                     }
 
-
                     if ($quantity > $product->stock) {
 
                         throw ValidationException::withMessages([
@@ -460,7 +446,6 @@ if ($request->hasFile('gcash_proof')) {
                                 "Insufficient stock for {$product->product_name}.",
                         ]);
                     }
-
 
                     /*
                     |--------------------------------------------------------------------------
@@ -475,7 +460,6 @@ if ($request->hasFile('gcash_proof')) {
                         2
                     );
 
-
                     $lineItems[] = [
                         'product' => $product,
                         'quantity' => $quantity,
@@ -483,13 +467,11 @@ if ($request->hasFile('gcash_proof')) {
                         'subtotal' => $subtotal,
                     ];
 
-
                     $totalAmount = round(
                         $totalAmount + $subtotal,
                         2
                     );
                 }
-
 
                 /*
                 |--------------------------------------------------------------------------
@@ -512,7 +494,6 @@ if ($request->hasFile('gcash_proof')) {
                     )->exists()
                 );
 
-
                 /*
                 |--------------------------------------------------------------------------
                 | Create Sale
@@ -520,36 +501,31 @@ if ($request->hasFile('gcash_proof')) {
                 */
 
                 $sale = Sale::create([
-    'sale_number' => $saleNumber,
-    'user_id' => auth()->id(),
-    'sale_type' => 'Online',
-    'payment_method' =>
-        $validated['payment_method'],
-    'payment_status' => 'Pending',
-    'status' => 'Pending',
-    'total_amount' => $totalAmount,
-    'notes' =>
-        $validated['notes'] ?? null,
-    'gcash_reference' =>
-        $validated['gcash_reference'] ?? null,
-    'gcash_proof' => $gcashProofPath,
-]);
-
+                    'sale_number' => $saleNumber,
+                    'user_id' => auth()->id(),
+                    'sale_type' => 'Online',
+                    'payment_method' =>
+                        $validated['payment_method'],
+                    'payment_status' => 'Pending',
+                    'status' => 'Pending',
+                    'total_amount' => $totalAmount,
+                    'notes' =>
+                        $validated['notes'] ?? null,
+                    'gcash_reference' =>
+                        $validated['gcash_reference'] ?? null,
+                    'gcash_proof' => $gcashProofPath,
+                ]);
 
                 /*
                 |--------------------------------------------------------------------------
-                | Create Sale Items + Update Inventory
+                | Create Sale Items + FIFO Allocation + Update Inventory
                 |--------------------------------------------------------------------------
                 */
 
                 foreach ($lineItems as $lineItem) {
 
                     $product = $lineItem['product'];
-
-                    $newStock =
-                        $product->stock -
-                        $lineItem['quantity'];
-
+                    $quantity = $lineItem['quantity'];
 
                     /*
                     |--------------------------------------------------------------------------
@@ -557,17 +533,89 @@ if ($request->hasFile('gcash_proof')) {
                     |--------------------------------------------------------------------------
                     */
 
-                    SaleItem::create([
+                    $saleItem = SaleItem::create([
                         'sale_id' => $sale->id,
                         'product_id' => $product->id,
-                        'quantity' =>
-                            $lineItem['quantity'],
-                        'price' =>
-                            $lineItem['price'],
-                        'subtotal' =>
-                            $lineItem['subtotal'],
+                        'quantity' => $quantity,
+                        'price' => $lineItem['price'],
+                        'subtotal' => $lineItem['subtotal'],
                     ]);
 
+                    /*
+                    |--------------------------------------------------------------------------
+                    | FIFO COST ALLOCATION
+                    |--------------------------------------------------------------------------
+                    */
+
+                    $remainingToAllocate = $quantity;
+
+                    $purchaseItems = PurchaseItem::query()
+                        ->where('product_id', $product->id)
+                        ->where('remaining_quantity', '>', 0)
+                        ->whereHas('purchase', function ($query) {
+                            $query->where('status', 'Completed');
+                        })
+                        ->orderBy('received_at')
+                        ->orderBy('id')
+                        ->lockForUpdate()
+                        ->get();
+
+                    foreach ($purchaseItems as $purchaseItem) {
+
+                        if ($remainingToAllocate <= 0) {
+                            break;
+                        }
+
+                        $availableQuantity =
+                            (int) $purchaseItem->remaining_quantity;
+
+                        $allocatedQuantity = min(
+                            $remainingToAllocate,
+                            $availableQuantity
+                        );
+
+                        $unitCost =
+                            (float) $purchaseItem->purchase_price;
+
+                        $costSubtotal = round(
+                            $allocatedQuantity * $unitCost,
+                            2
+                        );
+
+                        SaleItemFifoAllocation::create([
+                            'sale_item_id' =>
+                                $saleItem->id,
+                            'purchase_item_id' =>
+                                $purchaseItem->id,
+                            'quantity' =>
+                                $allocatedQuantity,
+                            'unit_cost' =>
+                                $unitCost,
+                            'cost_subtotal' =>
+                                $costSubtotal,
+                        ]);
+
+                        $purchaseItem->decrement(
+                            'remaining_quantity',
+                            $allocatedQuantity
+                        );
+
+                        $remainingToAllocate -= $allocatedQuantity;
+                    }
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Prevent Sale Without Complete FIFO Cost
+                    |--------------------------------------------------------------------------
+                    */
+
+                    if ($remainingToAllocate > 0) {
+
+                        throw ValidationException::withMessages([
+                            'cart' =>
+                                "There is not enough FIFO-costed stock available for {$product->product_name}. Please record the product's existing stock as a purchase batch first.",
+                        ]);
+                    }
 
                     /*
                     |--------------------------------------------------------------------------
@@ -575,46 +623,49 @@ if ($request->hasFile('gcash_proof')) {
                     |--------------------------------------------------------------------------
                     */
 
+                    $newStock =
+                        $product->stock - $quantity;
+
                     $product->update([
                         'stock' => $newStock,
-
                         'status' =>
                             $newStock === 0
                                 ? 'Out of Stock'
                                 : 'Available',
                     ]);
 
+                   /*
+|--------------------------------------------------------------------------
+| Inventory Movement Per FIFO Batch
+|--------------------------------------------------------------------------
+*/
 
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Inventory Movement
-                    |--------------------------------------------------------------------------
-                    */
+foreach ($saleItem->fifoAllocations()->get() as $allocation) {
 
-                    InventoryMovement::create([
-                        'product_id' => $product->id,
-                        'sale_id' => $sale->id,
-                        'movement_type' => 'Online Sale',
-                        'quantity' =>
-                            $lineItem['quantity'],
-                        'remarks' =>
-                            "Order {$sale->sale_number}",
-                    ]);
+    InventoryMovement::create([
+        'product_id' => $product->id,
+        'purchase_item_id' => $allocation->purchase_item_id,
+        'sale_id' => $sale->id,
+        'movement_type' => 'Online Sale',
+        'quantity' => $allocation->quantity,
+        'remarks' =>
+            "Order {$sale->sale_number}",
+    ]);
+}
                 }
-
 
                 return $sale;
             });
-            if ($user->order_notifications) {
-    $user->notify(
-        new \App\Notifications\OrderNotification(
-            $sale,
-            'Order Placed',
-            "Your order {$sale->sale_number} has been placed successfully."
-        )
-    );
-}
 
+            if ($user->order_notifications) {
+                $user->notify(
+                    new \App\Notifications\OrderNotification(
+                        $sale,
+                        'Order Placed',
+                        "Your order {$sale->sale_number} has been placed successfully."
+                    )
+                );
+            }
 
             /*
             |--------------------------------------------------------------------------
@@ -664,7 +715,6 @@ if ($request->hasFile('gcash_proof')) {
                     ->delete();
             }
 
-
             /*
             |--------------------------------------------------------------------------
             | Success
@@ -680,7 +730,6 @@ if ($request->hasFile('gcash_proof')) {
                     'success',
                     'Purchase successful!'
                 );
-
 
         } catch (ValidationException $exception) {
 
@@ -698,7 +747,6 @@ if ($request->hasFile('gcash_proof')) {
         }
     }
 
-
     /*
     |--------------------------------------------------------------------------
     | Checkout Success
@@ -711,11 +759,9 @@ if ($request->hasFile('gcash_proof')) {
             abort(403);
         }
 
-
         $sale->load([
             'saleItems.product',
         ]);
-
 
         return view(
             'customer.checkout-success',

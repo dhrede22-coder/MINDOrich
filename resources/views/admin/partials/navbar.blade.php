@@ -25,18 +25,7 @@
 
 <nav class="top-navbar">
 
-    <!-- Left -->
-    <div>
-
-        <h4 class="fw-bold mb-0">
-            Welcome, {{ auth()->user()->name }}
-        </h4>
-
-    </div>
-
-
-    <!-- Right -->
-    <div class="d-flex align-items-center gap-3">
+    <div class="d-flex align-items-center gap-3 ms-auto">
 
 
         <!-- =====================================================
